@@ -7,8 +7,13 @@ RUN gradle clean bootJar --no-daemon
 # run
 FROM eclipse-temurin:21-jre
 WORKDIR /app
-ENV JAVA_OPTS=""
-COPY --from=build /app/build/libs/*.jar app.jar
-EXPOSE 8080
-ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]
 
+# Set default JAVA_OPTS for container memory limits
+ENV JAVA_OPTS="-XX:+UseContainerSupport -XX:MaxRAMPercentage=75.0"
+
+# Copy JAR from build stage
+COPY --from=build /app/build/libs/*.jar app.jar
+
+EXPOSE 8080
+
+ENTRYPOINT ["sh","-c","java $JAVA_OPTS -jar app.jar"]
