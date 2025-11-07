@@ -1,0 +1,36 @@
+services:
+  postgres:
+    image: postgres:17
+    container_name: invoiceme-postgres
+    environment:
+      POSTGRES_USER: invoiceme
+      POSTGRES_PASSWORD: invoiceme
+      POSTGRES_DB: invoiceme
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U invoiceme -d invoiceme"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  api:
+    build:
+      context: ./backend
+    container_name: invoiceme-api
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      SPRING_PROFILES_ACTIVE: default
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/invoiceme
+      SPRING_DATASOURCE_USERNAME: invoiceme
+      SPRING_DATASOURCE_PASSWORD: invoiceme
+    ports:
+      - "8080:8080"
+
+volumes:
+  pgdata:
+
