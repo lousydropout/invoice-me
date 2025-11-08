@@ -167,6 +167,7 @@ class ReadModelIntegrationTest {
 
         List<InvoiceDetailView.PaymentView> paymentViews = loadedInvoice.getPayments().stream()
             .map(p -> new InvoiceDetailView.PaymentView(
+                p.getId(),
                 p.getAmount().getAmount(),
                 p.getPaymentDate(),
                 p.getMethod().name(),

@@ -13,4 +13,8 @@ spring:
         dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
     enabled: true
+  security:
+    user:
+      name: testuser
+      password: testpass
 

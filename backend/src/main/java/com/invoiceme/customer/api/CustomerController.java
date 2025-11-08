@@ -6,6 +6,9 @@ import com.invoiceme.customer.api.dto.UpdateCustomerRequest;
 import com.invoiceme.customer.application.commands.CreateCustomerHandler;
 import com.invoiceme.customer.application.commands.DeleteCustomerHandler;
 import com.invoiceme.customer.application.commands.UpdateCustomerHandler;
+import com.invoiceme.customer.application.queries.OutstandingByCustomerHandler;
+import com.invoiceme.customer.application.queries.OutstandingByCustomerQuery;
+import com.invoiceme.customer.application.queries.dto.CustomerView;
 import com.invoiceme.customer.domain.Customer;
 import com.invoiceme.customer.domain.CustomerRepository;
 import jakarta.validation.Valid;
@@ -26,17 +29,20 @@ public class CustomerController {
     private final UpdateCustomerHandler updateHandler;
     private final DeleteCustomerHandler deleteHandler;
     private final CustomerRepository customerRepository;
+    private final OutstandingByCustomerHandler outstandingByCustomerHandler;
 
     public CustomerController(
         CreateCustomerHandler createHandler,
         UpdateCustomerHandler updateHandler,
         DeleteCustomerHandler deleteHandler,
-        CustomerRepository customerRepository
+        CustomerRepository customerRepository,
+        OutstandingByCustomerHandler outstandingByCustomerHandler
     ) {
         this.createHandler = createHandler;
         this.updateHandler = updateHandler;
         this.deleteHandler = deleteHandler;
         this.customerRepository = customerRepository;
+        this.outstandingByCustomerHandler = outstandingByCustomerHandler;
     }
 
     @PostMapping
@@ -79,6 +85,12 @@ public class CustomerController {
             .orElseThrow(() -> com.invoiceme.shared.application.errors.ApplicationError.notFound("Customer"));
         
         return ResponseEntity.ok(CustomerResponse.from(customer));
+    }
+
+    @GetMapping("/outstanding")
+    public ResponseEntity<List<CustomerView>> getOutstanding() {
+        List<CustomerView> outstanding = outstandingByCustomerHandler.handle(new OutstandingByCustomerQuery());
+        return ResponseEntity.ok(outstanding);
     }
 }
 

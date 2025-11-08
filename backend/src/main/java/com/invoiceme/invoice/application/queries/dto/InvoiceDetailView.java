@@ -39,6 +39,7 @@ public record InvoiceDetailView(
      * Read model DTO for a payment within an invoice detail view.
      */
     public record PaymentView(
+        UUID id,
         BigDecimal amount,
         LocalDate paymentDate,
         String method,

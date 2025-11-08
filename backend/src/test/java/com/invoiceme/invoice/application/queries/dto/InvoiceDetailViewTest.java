@@ -44,6 +44,7 @@ class InvoiceDetailViewTest {
 
         List<InvoiceDetailView.PaymentView> payments = List.of(
             new InvoiceDetailView.PaymentView(
+                UUID.randomUUID(),
                 BigDecimal.valueOf(250),
                 LocalDate.now(),
                 "BANK_TRANSFER",
@@ -106,8 +107,10 @@ class InvoiceDetailViewTest {
     @DisplayName("Should create nested PaymentView correctly")
     void shouldCreatePaymentView() {
         // Given
+        UUID paymentId = UUID.randomUUID();
         LocalDate paymentDate = LocalDate.now();
         InvoiceDetailView.PaymentView payment = new InvoiceDetailView.PaymentView(
+            paymentId,
             BigDecimal.valueOf(250),
             paymentDate,
             "BANK_TRANSFER",
@@ -115,6 +118,7 @@ class InvoiceDetailViewTest {
         );
 
         // Then
+        assertThat(payment.id()).isEqualTo(paymentId);
         assertThat(payment.amount()).isEqualByComparingTo(BigDecimal.valueOf(250));
         assertThat(payment.paymentDate()).isEqualTo(paymentDate);
         assertThat(payment.method()).isEqualTo("BANK_TRANSFER");

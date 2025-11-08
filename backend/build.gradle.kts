@@ -3,6 +3,7 @@ plugins {
     id("org.springframework.boot") version "3.5.0"
     id("io.spring.dependency-management") version "1.1.6"
     id("org.flywaydb.flyway") version "10.17.0"
+    jacoco
 }
 
 group = "com.invoiceme"
@@ -60,4 +61,18 @@ tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
 
 springBoot {
     mainClass.set("com.invoiceme.api.InvoicemeApiApplication")
+}
+
+tasks.test {
+    finalizedBy("jacocoTestReport")
+}
+
+tasks.named<org.gradle.testing.jacoco.tasks.JacocoReport>("jacocoTestReport") {
+    dependsOn(tasks.test)
+    reports {
+        xml.required.set(false)
+        html.required.set(true)
+        html.outputLocation.set(layout.buildDirectory.dir("reports/jacoco/test/html"))
+    }
+    executionData.setFrom(fileTree(layout.buildDirectory.dir("jacoco")).include("**/*.exec"))
 }

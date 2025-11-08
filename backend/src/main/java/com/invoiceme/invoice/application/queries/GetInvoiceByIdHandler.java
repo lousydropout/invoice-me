@@ -74,6 +74,7 @@ public class GetInvoiceByIdHandler {
         // Map payments
         List<InvoiceDetailView.PaymentView> paymentViews = invoiceWithPayments.getPayments().stream()
             .map(payment -> new InvoiceDetailView.PaymentView(
+                payment.getId(),
                 payment.getAmount(),
                 payment.getPaymentDate(),
                 payment.getMethod().name(),
