@@ -92,6 +92,20 @@ public class Customer {
     }
 
     /**
+     * Updates customer name.
+     * 
+     * @param name the new name
+     */
+    public void updateName(String name) {
+        if (name == null || name.isBlank()) {
+            throw new IllegalArgumentException("Customer name cannot be null or empty");
+        }
+        
+        this.name = name;
+        this.domainEvents.add(new CustomerUpdated(id, Instant.now()));
+    }
+
+    /**
      * Updates customer contact information.
      * 
      * @param address the new address

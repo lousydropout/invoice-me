@@ -47,6 +47,7 @@ public class UpdateCustomerHandler {
         PaymentTerms paymentTerms = PaymentTerms.of(command.defaultPaymentTerms());
 
         // Update customer
+        customer.updateName(command.name());
         customer.updateContactInfo(address, email, command.phone());
         customer.setDefaultPaymentTerms(paymentTerms);
 

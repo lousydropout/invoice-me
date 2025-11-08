@@ -1,5 +1,6 @@
-package com.invoiceme.api.exception;
+package com.invoiceme.shared.api.exception;
 
+import com.invoiceme.shared.application.errors.ApplicationError;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,8 +12,21 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+/**
+ * Global exception handler for REST API.
+ * 
+ * Maps domain and application errors to appropriate HTTP status codes.
+ */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    @ExceptionHandler(ApplicationError.class)
+    public ResponseEntity<Map<String, Object>> handleApplicationError(ApplicationError ex) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", ex.getMessage());
+        response.put("code", ex.getCode());
+        return ResponseEntity.status(ex.getHttpStatus()).body(response);
+    }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseEntity<Map<String, Object>> handleValidationException(

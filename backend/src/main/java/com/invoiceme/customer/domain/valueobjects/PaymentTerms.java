@@ -1,21 +1,28 @@
 package com.invoiceme.customer.domain.valueobjects;
 
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Value object representing payment terms.
  * 
- * Examples: "NET_15", "NET_30", "DUE_ON_RECEIPT"
+ * Valid values: "NET_15", "NET_30", "NET_45", "DUE_ON_RECEIPT"
  * Immutable and equality by value.
  */
 public final class PaymentTerms {
+    private static final Set<String> VALID_TERMS = Set.of("NET_15", "NET_30", "NET_45", "DUE_ON_RECEIPT");
+    
     private final String value;
 
     private PaymentTerms(String value) {
         if (value == null || value.isBlank()) {
             throw new IllegalArgumentException("Payment terms cannot be null or blank");
         }
-        this.value = value.trim().toUpperCase();
+        String normalized = value.trim().toUpperCase();
+        if (!VALID_TERMS.contains(normalized)) {
+            throw new IllegalArgumentException("Invalid payment terms: " + value + ". Valid values are: " + VALID_TERMS);
+        }
+        this.value = normalized;
     }
 
     /**

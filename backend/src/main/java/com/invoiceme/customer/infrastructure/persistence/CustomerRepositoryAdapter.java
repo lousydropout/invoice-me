@@ -31,8 +31,30 @@ public class CustomerRepositoryAdapter implements CustomerRepository {
 
     @Override
     public void save(Customer customer) {
-        var entity = mapper.toEntity(customer);
-        jpaRepository.save(entity);
+        var existingEntity = jpaRepository.findById(customer.getId());
+        
+        if (existingEntity.isPresent()) {
+            // Update existing entity
+            var entity = existingEntity.get();
+            entity.setName(customer.getName());
+            entity.setEmail(customer.getEmail().getValue());
+            entity.setPhone(customer.getPhone());
+            
+            var address = customer.getAddress();
+            if (address != null) {
+                entity.setStreet(address.getStreet());
+                entity.setCity(address.getCity());
+                entity.setPostalCode(address.getPostalCode());
+                entity.setCountry(address.getCountry());
+            }
+            
+            entity.setPaymentTerms(customer.getDefaultPaymentTerms().getValue());
+            jpaRepository.save(entity);
+        } else {
+            // Create new entity
+            var entity = mapper.toEntity(customer);
+            jpaRepository.save(entity);
+        }
     }
 
     @Override
