@@ -10,7 +10,6 @@ import com.invoiceme.shared.domain.Email;
 
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,6 +59,7 @@ public class Customer {
 
     /**
      * Creates a new Customer aggregate.
+     * Emits CustomerCreated event.
      * 
      * @param id the customer ID
      * @param name the customer name
@@ -73,6 +73,22 @@ public class Customer {
         Customer customer = new Customer(id, name, email, address, phone, defaultPaymentTerms);
         customer.domainEvents.add(new CustomerCreated(id, name, email.getValue(), Instant.now()));
         return customer;
+    }
+
+    /**
+     * Reconstructs a Customer aggregate from existing data (e.g., from database).
+     * Does NOT emit events - used for loading existing aggregates.
+     * 
+     * @param id the customer ID
+     * @param name the customer name
+     * @param email the customer email
+     * @param address the customer address
+     * @param phone the customer phone (optional)
+     * @param defaultPaymentTerms the default payment terms
+     * @return a Customer instance without events
+     */
+    public static Customer reconstruct(UUID id, String name, Email email, Address address, String phone, PaymentTerms defaultPaymentTerms) {
+        return new Customer(id, name, email, address, phone, defaultPaymentTerms);
     }
 
     /**
