@@ -32,7 +32,7 @@ public class ApplicationError extends RuntimeException {
     public static ApplicationError notFound(String entity) {
         return new ApplicationError(
             entity + " not found",
-            "NOT_FOUND",
+            ErrorCodes.NOT_FOUND,
             404
         );
     }
@@ -46,7 +46,7 @@ public class ApplicationError extends RuntimeException {
     public static ApplicationError conflict(String reason) {
         return new ApplicationError(
             reason,
-            "CONFLICT",
+            ErrorCodes.CONFLICT,
             409
         );
     }
@@ -60,7 +60,7 @@ public class ApplicationError extends RuntimeException {
     public static ApplicationError validation(String message) {
         return new ApplicationError(
             message,
-            "VALIDATION_ERROR",
+            ErrorCodes.VALIDATION_ERROR,
             422
         );
     }
