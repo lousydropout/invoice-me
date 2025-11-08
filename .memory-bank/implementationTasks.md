@@ -560,9 +560,135 @@
 
 ---
 
-## ☁️ Epic 8: Deployment
+## 🔧 Epic 8: Operational Clarity and Developer Experience Enhancements
 
-### Task 8.1 — AWS Aurora + Fargate Deployment 🧍‍♂️
+### Task 8.1 — OpenAPI Specification ✅
+
+**Goal:** Add OpenAPI/Swagger documentation for API transparency.
+
+**Acceptance Criteria:**
+- [ ] Add `springdoc-openapi-starter-webmvc-ui` dependency
+- [ ] Serve OpenAPI spec at `/v3/api-docs`
+- [ ] Serve Swagger UI at `/swagger-ui.html`
+- [ ] Verify endpoints and DTOs are correctly reflected
+- [ ] Commit generated spec file for documentation purposes
+
+**Execution:** ✅ **Cursor-automatable**
+
+**Files to Create/Update:**
+- `build.gradle.kts` (add springdoc dependency)
+- `application.yml` (configure OpenAPI paths)
+- `openapi.json` (generated spec file, committed for docs)
+
+**Manual Verification:**
+- Access Swagger UI at `http://localhost:8080/swagger-ui.html`
+- Verify all endpoints are documented
+- Verify DTOs match API responses
+
+---
+
+### Task 8.2 — Event Persistence and Debug Endpoint ⚙️
+
+**Goal:** Persist domain events for debugging and audit purposes.
+
+**Acceptance Criteria:**
+- [ ] Create `domain_events` table (id, type, payload JSON, created_at)
+- [ ] Modify `SimpleDomainEventPublisher` to persist events
+- [ ] Add repository for retrieving persisted events
+- [ ] Add `/api/debug/events` endpoint (restricted to `dev` profile)
+- [ ] Ensure event publication still functions normally
+
+**Execution:** ⚙️ **Cursor scaffolding + manual verification**
+
+**Files to Create/Update:**
+- `shared/infrastructure/persistence/entities/DomainEventEntity.java`
+- `shared/infrastructure/persistence/DomainEventJpaRepository.java`
+- `shared/infrastructure/events/SimpleDomainEventPublisher.java` (enhance to persist)
+- `shared/api/debug/DebugEventController.java` (dev profile only)
+- `schema.sql` (add domain_events table)
+
+**Manual Verification:**
+- Create invoice → verify event persisted in `domain_events` table
+- Access `/api/debug/events` in dev profile → verify events returned
+- Verify endpoint not accessible in prod profile
+
+---
+
+### Task 8.3 — Standardized Error Envelope ✅
+
+**Goal:** Ensure all error responses follow a consistent structure.
+
+**Acceptance Criteria:**
+- [ ] Define `ApiError` DTO: `{ code: string, message: string, details?: object }`
+- [ ] Update `GlobalExceptionHandler` to return consistent JSON responses
+- [ ] Add/adjust tests to validate the unified error structure
+
+**Execution:** ✅ **Cursor-automatable**
+
+**Files to Create/Update:**
+- `shared/api/dto/ApiError.java`
+- `shared/api/exception/GlobalExceptionHandler.java` (update to use ApiError)
+- `shared/api/exception/GlobalExceptionHandlerTest.java` (update tests)
+
+**Manual Verification:**
+- Test various error scenarios → verify consistent error envelope
+- Verify all error responses match ApiError structure
+
+---
+
+### Task 8.4 — Remove Flyway ✅
+
+**Goal:** Simplify schema management by using Spring Boot's built-in schema initialization.
+
+**Acceptance Criteria:**
+- [ ] Remove Flyway dependency from `build.gradle.kts`
+- [ ] Delete `/resources/db/migration` directory
+- [ ] Create `schema.sql` in `/resources`
+- [ ] Configure `spring.sql.init.mode=always` in `application.yml`
+- [ ] Update Docker and compose configurations accordingly
+
+**Execution:** ✅ **Cursor-automatable**
+
+**Files to Create/Update:**
+- `build.gradle.kts` (remove flyway plugin and dependency)
+- `resources/schema.sql` (consolidate all table definitions)
+- `application.yml` (add `spring.sql.init.mode=always`)
+- `docker-compose.yml` (remove flyway-related configs if any)
+- `Dockerfile` (remove flyway-related steps if any)
+
+**Manual Verification:**
+- Start application → verify schema created correctly
+- Verify all tables exist and relationships work
+- Run existing tests → verify they still pass
+
+---
+
+### Task 8.5 — Seed Data Loader ✅
+
+**Goal:** Provide demo data for local development and testing.
+
+**Acceptance Criteria:**
+- [ ] Create `CommandLineRunner` (active under `dev` profile)
+- [ ] Populate demo customers and invoices if DB is empty
+- [ ] Use repository interfaces for inserts
+- [ ] Validate with existing `validate-*` scripts that data loads successfully
+
+**Execution:** ✅ **Cursor-automatable**
+
+**Files to Create:**
+- `shared/infrastructure/persistence/DevDataSeeder.java` (CommandLineRunner, @Profile("dev"))
+- `application-dev.yml` (ensure dev profile configuration)
+
+**Manual Verification:**
+- Start app with `dev` profile → verify demo data created
+- Run `validate-*` scripts → verify they work with seeded data
+- Verify seeder only runs when DB is empty
+
+---
+
+## ☁️ Epic 9: AWS Deployment
+
+### Task 9.1 — AWS Aurora + Fargate Deployment 🧍‍♂️
 
 **Goal:** Deploy to AWS infrastructure.
 
@@ -589,16 +715,17 @@
 | 1. Setup & Infra    | 4     | 3         | 1                | 0           |
 | 2. Customer Context | 4     | 3         | 1                | 0           |
 | 3. Invoice Context  | 5     | 3         | 2                | 0           |
-| 4. Payment Context  | 2     | 1         | 1                | 0           |
+| 4. Payment Context    | 2     | 1         | 1                | 0           |
 | 5. CQRS Read Side   | 3     | 1         | 2                | 0           |
 | 6. Cross-Cutting    | 3     | 3         | 0                | 0           |
 | 7. Testing          | 3     | 1         | 1                | 1           |
-| 8. Deployment       | 1     | 0         | 0                | 1           |
+| 8. Operational Clarity | 5  | 4         | 1                | 0           |
+| 9. AWS Deployment   | 1     | 0         | 0                | 1           |
 
 **Total:**
-- **25 Tasks**
-- **15 Cursor-automatable (✅)**
-- **8 require human verification (⚙️)**
+- **30 Tasks**
+- **19 Cursor-automatable (✅)**
+- **9 require human verification (⚙️)**
 - **2 manual-only (🧍‍♂️)**
 
 ---
@@ -612,7 +739,8 @@
 5. **Epic 5** (CQRS) - Read side, depends on write side
 6. **Epic 6** (Cross-Cutting) - Can be done in parallel
 7. **Epic 7** (Testing) - Throughout development
-8. **Epic 8** (Deployment) - Final step
+8. **Epic 8** (Operational Clarity) - Developer experience before deployment
+9. **Epic 9** (AWS Deployment) - Final step
 
 ---
 
@@ -624,7 +752,7 @@
 3. Scaffold all ⚙️ tasks (code generation + placeholders for manual verification)
 4. Generate test skeletons for Epic 7
 5. Ensure VSA folder structure is strictly followed
-6. Generate OpenAPI spec via `springdoc-openapi-starter-webmvc-ui`
+6. OpenAPI spec generation is handled in Epic 8 (Task 8.1)
 
 **Verification Commands:**
 ```bash
