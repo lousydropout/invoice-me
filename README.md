@@ -138,6 +138,27 @@ backend/
 - **Credentials**: `invoiceme` / `invoiceme`
 - **Migrations**: Managed by Flyway
 
+## API Documentation
+
+The API is automatically documented using OpenAPI 3.0 specification:
+
+- **Swagger UI**: http://localhost:8080/swagger-ui.html
+- **OpenAPI JSON**: http://localhost:8080/v3/api-docs
+- **Exported Spec**: `backend/openapi.json`
+
+The Swagger UI provides an interactive interface to explore and test all API endpoints. The OpenAPI specification is auto-generated from the codebase and includes all endpoints, request/response schemas, and validation rules.
+
+### Accessing Swagger UI
+
+1. Start the application (see Local Development section)
+2. Navigate to http://localhost:8080/swagger-ui.html
+3. Swagger UI is publicly accessible (no authentication required)
+4. API endpoints still require BasicAuth (admin:admin)
+
+### OpenAPI Specification
+
+The OpenAPI JSON specification is available at `/v3/api-docs` and is also exported to `backend/openapi.json` for version control and documentation purposes.
+
 ## Future: AWS Deployment
 
 The application is prepared for AWS ECS Fargate + RDS deployment:

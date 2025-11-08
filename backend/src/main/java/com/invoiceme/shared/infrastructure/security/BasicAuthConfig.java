@@ -43,9 +43,11 @@ public class BasicAuthConfig {
             .authorizeHttpRequests(auth -> auth
                 // Health endpoints remain public for monitoring
                 .requestMatchers("/api/health", "/actuator/health", "/actuator/info").permitAll()
+                // Swagger UI and OpenAPI endpoints remain public for documentation
+                .requestMatchers("/swagger-ui.html", "/swagger-ui/**", "/v3/api-docs/**", "/swagger-resources/**").permitAll()
                 // All other /api/** endpoints require authentication
                 .requestMatchers("/api/**").authenticated()
-                // Allow all other requests (e.g., Swagger UI if added later)
+                // Allow all other requests
                 .anyRequest().permitAll())
             .httpBasic(httpBasic -> {});
 
