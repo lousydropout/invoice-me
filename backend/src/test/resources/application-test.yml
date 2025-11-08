@@ -1,15 +1,16 @@
 spring:
   datasource:
-    url: jdbc:h2:mem:testdb
-    driver-class-name: org.h2.Driver
-    username: sa
-    password: 
+    # Testcontainers will override these properties dynamically
+    url: jdbc:postgresql://localhost:5432/invoiceme_test
+    driver-class-name: org.postgresql.Driver
+    username: test
+    password: test
   jpa:
     hibernate:
-      ddl-auto: create-drop
+      ddl-auto: validate
     properties:
       hibernate:
-        dialect: org.hibernate.dialect.H2Dialect
+        dialect: org.hibernate.dialect.PostgreSQLDialect
   flyway:
-    enabled: false
+    enabled: true
 

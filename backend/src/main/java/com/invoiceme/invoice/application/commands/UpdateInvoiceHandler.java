@@ -3,12 +3,14 @@ package com.invoiceme.invoice.application.commands;
 import com.invoiceme.invoice.domain.Invoice;
 import com.invoiceme.invoice.domain.InvoiceRepository;
 import com.invoiceme.invoice.domain.LineItem;
+import com.invoiceme.invoice.domain.events.InvoiceUpdated;
 import com.invoiceme.shared.application.bus.DomainEventPublisher;
 import com.invoiceme.shared.application.errors.ApplicationError;
 import com.invoiceme.shared.domain.Money;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.Currency;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -45,14 +47,31 @@ public class UpdateInvoiceHandler {
             .collect(Collectors.toList());
 
         // Update invoice (domain methods enforce DRAFT status requirement)
+        // Note: Each update method emits an InvoiceUpdated event, but we want only one
+        // event for the entire update operation.
         invoice.updateLineItems(lineItems);
         invoice.updateDueDate(command.dueDate());
         invoice.updateTaxRate(command.taxRate());
         invoice.updateNotes(command.notes());
 
-        // Save and publish events
+        // Pull all events (will contain multiple InvoiceUpdated events)
+        var events = invoice.pullDomainEvents();
+        
+        // Filter out InvoiceUpdated events and keep any other events
+        var otherEvents = events.stream()
+            .filter(e -> !(e instanceof InvoiceUpdated))
+            .toList();
+        
+        // Publish a single InvoiceUpdated event for the entire update operation
+        eventPublisher.publish(List.of(new InvoiceUpdated(invoice.getId(), Instant.now())));
+        
+        // Publish any other events that may have been emitted
+        if (!otherEvents.isEmpty()) {
+            eventPublisher.publish(otherEvents);
+        }
+        
+        // Save invoice
         invoiceRepository.save(invoice);
-        eventPublisher.publish(invoice.pullDomainEvents());
     }
 }
 
