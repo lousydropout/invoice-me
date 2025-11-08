@@ -2,8 +2,11 @@ package com.invoiceme.invoice.api.dto;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.math.BigDecimal;
@@ -38,11 +41,11 @@ public record CreateInvoiceRequest(
      * DTO for a line item in the request.
      */
     public record LineItemDto(
-        @NotNull(message = "Description is required")
+        @NotBlank(message = "Description is required")
         String description,
 
         @NotNull(message = "Quantity is required")
-        @PositiveOrZero(message = "Quantity must be positive")
+        @Positive(message = "Quantity must be positive")
         BigDecimal quantity,
 
         @NotNull(message = "Unit price amount is required")
@@ -50,7 +53,8 @@ public record CreateInvoiceRequest(
         @JsonProperty("unitPriceAmount")
         BigDecimal unitPriceAmount,
 
-        @NotNull(message = "Unit price currency is required")
+        @NotBlank(message = "Unit price currency is required")
+        @Pattern(regexp = "^[A-Z]{3}$", message = "Currency must be a valid ISO 4217 code (3 uppercase letters)")
         @JsonProperty("unitPriceCurrency")
         String unitPriceCurrency // ISO 4217 currency code (e.g., "USD")
     ) {}

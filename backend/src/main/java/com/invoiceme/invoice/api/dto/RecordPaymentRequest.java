@@ -3,6 +3,7 @@ package com.invoiceme.invoice.api.dto;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Positive;
 
 import java.math.BigDecimal;
@@ -16,7 +17,8 @@ public record RecordPaymentRequest(
     @Positive(message = "Amount must be positive")
     BigDecimal amount,
 
-    @NotNull(message = "Currency is required")
+    @NotBlank(message = "Currency is required")
+    @Pattern(regexp = "^[A-Z]{3}$", message = "Currency must be a valid ISO 4217 code (3 uppercase letters)")
     String currency, // ISO 4217 currency code (e.g., "USD")
 
     @NotNull(message = "Payment date is required")
@@ -24,7 +26,9 @@ public record RecordPaymentRequest(
     LocalDate paymentDate,
 
     @NotBlank(message = "Payment method is required")
-    String method, // e.g., "Bank Transfer", "Credit Card", "Cash"
+    @Pattern(regexp = "^(CASH|BANK_TRANSFER|CREDIT_CARD|DEBIT_CARD|CHECK|WIRE_TRANSFER|OTHER)$", 
+             message = "Payment method must be one of: CASH, BANK_TRANSFER, CREDIT_CARD, DEBIT_CARD, CHECK, WIRE_TRANSFER, OTHER")
+    String method, // PaymentMethod enum value
 
     String reference // optional transaction reference
 ) {

@@ -291,7 +291,7 @@ class InvoiceApiIntegrationTest {
                 "amount": 110.00,
                 "currency": "USD",
                 "paymentDate": "%s",
-                "method": "Bank Transfer",
+                "method": "BANK_TRANSFER",
                 "reference": "REF-123"
             }
             """.formatted(LocalDate.now());
