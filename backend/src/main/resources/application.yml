@@ -12,6 +12,14 @@ spring:
     open-in-view: false
   flyway:
     enabled: true
+  # Security Configuration
+  # Credentials are loaded from environment variables:
+  # - SPRING_SECURITY_USER_NAME (default: admin)
+  # - SPRING_SECURITY_USER_PASSWORD (default: admin)
+  security:
+    user:
+      name: ${SPRING_SECURITY_USER_NAME:admin}
+      password: ${SPRING_SECURITY_USER_PASSWORD:admin}
 
 server:
   port: 8080
@@ -25,4 +33,5 @@ management:
     health:
       probes:
         enabled: true
+
 
