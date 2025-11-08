@@ -34,4 +34,19 @@ management:
       probes:
         enabled: true
 
+logging:
+  level:
+    root: INFO
+    com.invoiceme: INFO
+    com.invoiceme.shared.infrastructure.events.LoggingEventListener: INFO
+    org.springframework: WARN
+    org.hibernate: WARN
+  pattern:
+    # Structured logging pattern with MDC support
+    # Format: timestamp | level | logger | MDC context | message
+    console: "%d{yyyy-MM-dd HH:mm:ss.SSS} | %-5level | %logger{36} | [event.name=%mdc{event.name}, event.invoiceId=%mdc{event.invoiceId}, event.customerId=%mdc{event.customerId}, event.timestamp=%mdc{event.timestamp}] | %msg%n"
+    # JSON format for AWS CloudWatch Logs (optional, can be enabled via profile)
+    # Uncomment and use spring.profiles.active=cloudwatch to enable JSON logging
+    # file: "%d{yyyy-MM-dd HH:mm:ss.SSS} | %-5level | %logger{36} | %msg%n"
+
 
