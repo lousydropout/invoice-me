@@ -25,12 +25,28 @@ public class InvoiceRepositoryAdapter implements InvoiceRepository {
 
     @Override
     public Optional<Invoice> findById(UUID id) {
-        return jpaRepository.findById(id)
-            .map(mapper::toDomain);
+        // Fetch invoice with line items first
+        var entityWithLineItems = jpaRepository.findByIdWithLineItems(id);
+        if (entityWithLineItems.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        // Then fetch payments separately to avoid MultipleBagFetchException
+        var entityWithPayments = jpaRepository.findByIdWithPayments(id);
+        if (entityWithPayments.isEmpty()) {
+            return Optional.empty();
+        }
+        
+        // Merge the associations - both should have the same invoice, just different associations loaded
+        var entity = entityWithLineItems.get();
+        entity.setPayments(entityWithPayments.get().getPayments());
+        
+        return Optional.of(mapper.toDomain(entity));
     }
 
     @Override
     public void save(Invoice invoice) {
+        // For save, we don't need to eagerly load - we're replacing the collections
         var existingEntity = jpaRepository.findById(invoice.getId());
         
         if (existingEntity.isPresent()) {

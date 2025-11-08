@@ -13,6 +13,7 @@ public record PaymentRecorded(
     UUID invoiceId,
     UUID paymentId,
     BigDecimal amount,
+    String method,
     Instant occurredAt
 ) implements DomainEvent {
     public PaymentRecorded {
@@ -25,13 +26,16 @@ public record PaymentRecorded(
         if (amount == null || amount.compareTo(BigDecimal.ZERO) <= 0) {
             throw new IllegalArgumentException("Payment amount must be positive");
         }
+        if (method == null || method.isBlank()) {
+            throw new IllegalArgumentException("Payment method cannot be null or blank");
+        }
         if (occurredAt == null) {
             throw new IllegalArgumentException("Occurred at cannot be null");
         }
     }
 
-    public PaymentRecorded(UUID invoiceId, UUID paymentId, BigDecimal amount) {
-        this(invoiceId, paymentId, amount, Instant.now());
+    public PaymentRecorded(UUID invoiceId, UUID paymentId, BigDecimal amount, String method) {
+        this(invoiceId, paymentId, amount, method, Instant.now());
     }
 }
 

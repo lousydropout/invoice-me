@@ -5,6 +5,7 @@ import com.invoiceme.invoice.domain.events.InvoicePaid;
 import com.invoiceme.invoice.domain.events.InvoiceSent;
 import com.invoiceme.invoice.domain.events.InvoiceUpdated;
 import com.invoiceme.invoice.domain.events.PaymentRecorded;
+import com.invoiceme.invoice.domain.exceptions.PaymentExceedsBalanceException;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceNumber;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceStatus;
 import com.invoiceme.payment.domain.Payment;
@@ -235,7 +236,7 @@ class InvoiceDomainTest {
 
         // When/Then
         assertThatThrownBy(() -> invoice.recordPayment(payment))
-            .isInstanceOf(IllegalArgumentException.class)
+            .isInstanceOf(PaymentExceedsBalanceException.class)
             .hasMessageContaining("exceeds outstanding balance");
     }
 

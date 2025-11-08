@@ -5,6 +5,7 @@ import com.invoiceme.customer.domain.CustomerRepository;
 import com.invoiceme.customer.domain.valueobjects.PaymentTerms;
 import com.invoiceme.invoice.domain.Invoice;
 import com.invoiceme.invoice.domain.InvoiceRepository;
+import com.invoiceme.invoice.domain.exceptions.PaymentExceedsBalanceException;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceStatus;
 import com.invoiceme.invoice.domain.events.InvoiceCreated;
 import com.invoiceme.invoice.domain.events.InvoicePaid;
@@ -38,6 +39,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * T3.3 - Command Handlers Tests
@@ -377,6 +379,56 @@ class InvoiceCommandHandlerTest {
             assertThat(events.get(0)).isInstanceOf(PaymentRecorded.class);
             assertThat(events.get(1)).isInstanceOf(InvoicePaid.class);
         }
+    }
+
+    @Test
+    @DisplayName("T4.2.1 - RecordPaymentCommand fails when payment exceeds balance")
+    void recordPaymentCommandFailsWhenExceedingBalance() {
+        // Given
+        UUID invoiceId = UUID.randomUUID();
+        CreateInvoiceCommand createCommand = new CreateInvoiceCommand(
+            invoiceId,
+            customerId,
+            List.of(
+                new CreateInvoiceCommand.LineItemDto(
+                    "Service A",
+                    BigDecimal.valueOf(2),
+                    BigDecimal.valueOf(100),
+                    "USD"
+                )
+            ),
+            LocalDate.now(),
+            LocalDate.now().plusDays(30),
+            BigDecimal.valueOf(0.10),
+            "Test notes"
+        );
+        createInvoiceHandler.handle(createCommand);
+        
+        SendInvoiceCommand sendCommand = new SendInvoiceCommand(invoiceId);
+        sendInvoiceHandler.handle(sendCommand);
+        
+        // Total = 220 (200 subtotal + 20 tax)
+        // Attempt to pay 300 (exceeds balance)
+        UUID paymentId = UUID.randomUUID();
+        RecordPaymentCommand paymentCommand = new RecordPaymentCommand(
+            invoiceId,
+            paymentId,
+            BigDecimal.valueOf(300),
+            "USD",
+            LocalDate.now(),
+            "Bank Transfer",
+            "REF-123"
+        );
+
+        // When/Then
+        assertThatThrownBy(() -> recordPaymentHandler.handle(paymentCommand))
+            .isInstanceOf(PaymentExceedsBalanceException.class)
+            .hasMessageContaining("exceeds outstanding balance");
+        
+        // Verify invoice state unchanged
+        Invoice invoice = invoiceRepository.findById(invoiceId).get();
+        assertThat(invoice.getPayments()).isEmpty();
+        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.SENT);
     }
 
     @Test

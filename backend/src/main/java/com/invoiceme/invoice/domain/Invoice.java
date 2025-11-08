@@ -5,6 +5,7 @@ import com.invoiceme.invoice.domain.events.InvoicePaid;
 import com.invoiceme.invoice.domain.events.InvoiceSent;
 import com.invoiceme.invoice.domain.events.InvoiceUpdated;
 import com.invoiceme.invoice.domain.events.PaymentRecorded;
+import com.invoiceme.invoice.domain.exceptions.PaymentExceedsBalanceException;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceNumber;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceStatus;
 import com.invoiceme.payment.domain.Payment;
@@ -312,7 +313,7 @@ public class Invoice {
         
         Money balance = calculateBalance();
         if (payment.getAmount().isGreaterThan(balance)) {
-            throw new IllegalArgumentException(
+            throw new PaymentExceedsBalanceException(
                 String.format("Payment amount %s exceeds outstanding balance %s", payment.getAmount(), balance)
             );
         }
@@ -322,6 +323,7 @@ public class Invoice {
             id,
             payment.getId(),
             payment.getAmount().getAmount(),
+            payment.getMethod().name(),
             Instant.now()
         ));
         

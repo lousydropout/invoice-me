@@ -1,5 +1,6 @@
 package com.invoiceme.shared.api.exception;
 
+import com.invoiceme.invoice.domain.exceptions.PaymentExceedsBalanceException;
 import com.invoiceme.shared.application.errors.ApplicationError;
 import jakarta.persistence.EntityNotFoundException;
 import org.springframework.http.HttpStatus;
@@ -58,6 +59,15 @@ public class GlobalExceptionHandler {
         response.put("error", "Resource not found");
         response.put("details", ex.getMessage());
         return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+    }
+
+    @ExceptionHandler(PaymentExceedsBalanceException.class)
+    public ResponseEntity<Map<String, Object>> handlePaymentExceedsBalanceException(
+            PaymentExceedsBalanceException ex
+    ) {
+        Map<String, Object> response = new HashMap<>();
+        response.put("error", "Payment exceeds remaining balance");
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
