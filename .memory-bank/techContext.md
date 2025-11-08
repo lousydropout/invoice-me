@@ -2,13 +2,15 @@
 
 ## Technology Stack
 - **Language**: Java 21
-- **Framework**: Spring Boot 3.5
-- **Build Tool**: Gradle
-- **Database**: PostgreSQL
-- **ORM**: Spring Data JPA
-- **Migrations**: Flyway
+- **Framework**: Spring Boot 3.5.x
+- **Build Tool**: Gradle 8.14.x
+- **Database**: PostgreSQL 17.4 (specific patch version for TSD)
+- **ORM**: Spring Data JPA (Hibernate)
+- **Migrations**: Flyway (optional)
 - **Containerization**: Docker, Docker Compose
-- **Future Cloud**: AWS ECS Fargate, RDS
+- **Testing**: JUnit 5 + Testcontainers (for integration tests)
+- **Auth**: Spring Security BasicAuth
+- **Future Cloud**: AWS ECS Fargate, Aurora PostgreSQL Serverless v2
 
 ## Dependencies
 - Spring Boot Starter Web (REST API)
@@ -22,10 +24,11 @@
 
 ## Development Environment
 - Java 21 JDK
-- Gradle 8.14 (Kotlin DSL)
+- Gradle 8.14.x (Kotlin DSL)
 - Docker and Docker Compose
 - Local Postgres 17 via Docker Compose
 - Named volume `pgdata` for Postgres data persistence
+- Testcontainers for integration tests
 
 ## Deployment
 
@@ -36,25 +39,35 @@
 - Database connection: `jdbc:postgresql://postgres:5432/invoiceme`
 - Health check: `curl localhost:8080/api/health` → `{status:"ok"}`
 
-### AWS Target (Future Phase)
+### AWS Target (Production)
 - **Compute**: ECS Fargate (containerized application)
-- **Database**: RDS PostgreSQL instance
+- **Database**: Aurora PostgreSQL Serverless v2
 - **Configuration**: Environment variables
-  - `DB_HOST` - RDS endpoint
+  - `DB_HOST` - Aurora endpoint
   - `DB_USER` - Database username
   - `DB_PASSWORD` - Database password
   - `DB_NAME` - Database name
-- **Infrastructure**: Managed infrastructure (CDK) - future phase
+- **Monitoring**: CloudWatch logs (event & request logging)
+- **Security**: HTTPS, BasicAuth credentials from env (no public endpoints)
+- **Infrastructure**: Managed via AWS CDK
 
 ## API Documentation
 
-### Endpoints
+**Note:** The current scaffold has basic Invoice CRUD. The actual DDD implementation will have:
+- Customer, Invoice, and Payment resources
+- CQRS separation (Commands vs Queries)
+- Rich domain models with business logic
+- Domain events for side effects
+
+**See:** `.memory-bank/apiLayer.md` for complete API specification
+
+### Current Scaffold Endpoints (To Be Refactored)
 
 #### Health
 - `GET /api/health` - Health check endpoint
   - Returns: `{"status":"ok"}`
 
-#### Invoice CRUD
+#### Invoice CRUD (Scaffold - Anemic)
 - `POST /api/invoices` - Create invoice
   - Body: `{"customerName":"string","amount":"decimal"}`
   - Returns: InvoiceResponse with generated UUID
@@ -81,12 +94,23 @@
 - `500 Internal Server Error` - Server errors
 
 ## Database Schema
+
+**Note:** Current scaffold has basic invoice table. Actual DDD implementation will have:
+- `customers` table (Customer aggregate)
+- `invoices` table (Invoice aggregate)
+- `line_items` table (LineItem value objects within Invoice)
+- `payments` table (Payment entities within Invoice aggregate)
+- Optional: `domain_events` table (for outbox pattern)
+
+**See:** `.memory-bank/infrastructureLayer.md` for complete schema specification
+
+### Current Scaffold Schema (To Be Refactored)
 - Database name: `invoiceme`
 - Invoice table structure (via Flyway migration V1__init.sql):
   - `id` UUID PRIMARY KEY (auto-generated)
-  - `customer_name` TEXT NOT NULL
-  - `amount` NUMERIC(18,2) NOT NULL CHECK (amount > 0)
-  - `status` TEXT NOT NULL (enum: DRAFT, SENT, PAID, CANCELED)
+  - `customer_name` TEXT NOT NULL (will become `customer_id` reference)
+  - `amount` NUMERIC(18,2) NOT NULL CHECK (amount > 0) (will be calculated from line items)
+  - `status` TEXT NOT NULL (enum: DRAFT, SENT, PAID - CANCELED removed, Overdue is derived)
   - `created_at` TIMESTAMPTZ NOT NULL DEFAULT now()
   - `updated_at` TIMESTAMPTZ NOT NULL DEFAULT now()
 - Connection string format:
@@ -94,20 +118,46 @@
   - AWS: `jdbc:postgresql://${DB_HOST}:${DB_PORT}/${DB_NAME}`
 
 ## Project Structure
+
+**Current Scaffold Structure (To Be Refactored):**
 ```
 backend/
 ├── src/main/java/com/invoiceme/api/
 │   ├── controller/     # HealthController, InvoiceController
-│   ├── domain/         # Invoice entity, InvoiceStatus enum
-│   ├── dto/            # CreateInvoiceRequest, UpdateInvoiceRequest, InvoiceResponse (Java records)
+│   ├── domain/         # Invoice entity, InvoiceStatus enum (anemic)
+│   ├── dto/            # CreateInvoiceRequest, UpdateInvoiceRequest, InvoiceResponse
 │   ├── exception/      # GlobalExceptionHandler
 │   ├── mapper/         # InvoiceMapper
 │   ├── repository/     # InvoiceRepository
 │   └── service/        # InvoiceService (@Slf4j logging)
-├── src/main/resources/
-│   ├── application.yml          # Default config (localhost Postgres)
-│   ├── application-prod.yml    # Production config (env vars)
-│   └── db/migration/            # V1__init.sql
-└── Dockerfile                    # Multi-stage build (Gradle 8.14 + JRE 21)
 ```
+
+**Target DDD Structure:**
+```
+backend/
+├── src/main/java/app/
+│   ├── domain/          # Aggregates, Value Objects, Domain Events
+│   │   ├── customer/   # Customer aggregate
+│   │   ├── invoice/    # Invoice aggregate
+│   │   ├── payment/    # Payment entity (within Invoice)
+│   │   └── shared/     # Money, DomainEvent interface
+│   ├── application/     # Commands, Queries, Handlers
+│   │   ├── commands/   # Command handlers
+│   │   ├── queries/    # Query handlers
+│   │   └── bus/        # DomainEventPublisher
+│   ├── infrastructure/ # Repositories, JPA, Adapters
+│   │   ├── persistence/# Repository adapters, JPA entities
+│   │   ├── events/     # Event listeners, publishers
+│   │   └── security/   # Basic Auth config
+│   └── api/            # REST Controllers, DTOs
+│       ├── customer/   # CustomerController
+│       └── invoice/    # InvoiceController
+└── src/main/resources/
+    ├── application.yml
+    ├── application-prod.yml
+    ├── openapi.yaml    # OpenAPI specification
+    └── db/migration/   # Flyway migrations
+```
+
+**See:** `.memory-bank/canonicalDomainModel.md` and `.memory-bank/infrastructureLayer.md` for complete structure
 
