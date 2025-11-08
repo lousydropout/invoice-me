@@ -2,11 +2,11 @@ package com.invoiceme.invoice.infrastructure.persistence.mappers;
 
 import com.invoiceme.invoice.domain.Invoice;
 import com.invoiceme.invoice.domain.LineItem;
-import com.invoiceme.invoice.domain.Payment;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceNumber;
 import com.invoiceme.invoice.infrastructure.persistence.entities.InvoiceEntity;
 import com.invoiceme.invoice.infrastructure.persistence.entities.LineItemEntity;
 import com.invoiceme.invoice.infrastructure.persistence.entities.PaymentEntity;
+import com.invoiceme.payment.domain.Payment;
 import com.invoiceme.shared.domain.Money;
 import org.springframework.stereotype.Component;
 

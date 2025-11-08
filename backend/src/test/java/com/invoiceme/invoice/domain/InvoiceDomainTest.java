@@ -7,6 +7,8 @@ import com.invoiceme.invoice.domain.events.InvoiceUpdated;
 import com.invoiceme.invoice.domain.events.PaymentRecorded;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceNumber;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceStatus;
+import com.invoiceme.payment.domain.Payment;
+import com.invoiceme.payment.domain.PaymentMethod;
 import com.invoiceme.shared.domain.Money;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -196,7 +198,7 @@ class InvoiceDomainTest {
             UUID.randomUUID(),
             partialPayment,
             TODAY,
-            "Bank Transfer",
+            PaymentMethod.BANK_TRANSFER,
             "REF-123"
         );
 
@@ -227,7 +229,7 @@ class InvoiceDomainTest {
             UUID.randomUUID(),
             excessivePayment,
             TODAY,
-            "Bank Transfer",
+            PaymentMethod.BANK_TRANSFER,
             "REF-123"
         );
 
@@ -251,7 +253,7 @@ class InvoiceDomainTest {
             UUID.randomUUID(),
             total,
             TODAY,
-            "Bank Transfer",
+            PaymentMethod.BANK_TRANSFER,
             "REF-123"
         );
 
@@ -279,7 +281,7 @@ class InvoiceDomainTest {
             UUID.randomUUID(),
             Money.of(BigDecimal.valueOf(100), USD),
             TODAY,
-            "Bank Transfer",
+            PaymentMethod.BANK_TRANSFER,
             "REF-123"
         );
 

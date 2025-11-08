@@ -1,4 +1,4 @@
-package com.invoiceme.invoice.domain;
+package com.invoiceme.payment.domain;
 
 import com.invoiceme.shared.domain.Money;
 
@@ -15,10 +15,10 @@ public class Payment {
     private final UUID id;
     private final Money amount;
     private final LocalDate paymentDate;
-    private final String method;
+    private final PaymentMethod method;
     private final String reference;
 
-    public Payment(UUID id, Money amount, LocalDate paymentDate, String method, String reference) {
+    public Payment(UUID id, Money amount, LocalDate paymentDate, PaymentMethod method, String reference) {
         if (id == null) {
             throw new IllegalArgumentException("Payment ID cannot be null");
         }
@@ -31,8 +31,8 @@ public class Payment {
         if (paymentDate == null) {
             throw new IllegalArgumentException("Payment date cannot be null");
         }
-        if (method == null || method.isBlank()) {
-            throw new IllegalArgumentException("Payment method cannot be null or blank");
+        if (method == null) {
+            throw new IllegalArgumentException("Payment method cannot be null");
         }
         
         this.id = id;
@@ -54,7 +54,7 @@ public class Payment {
         return paymentDate;
     }
 
-    public String getMethod() {
+    public PaymentMethod getMethod() {
         return method;
     }
 
@@ -77,7 +77,7 @@ public class Payment {
 
     @Override
     public String toString() {
-        return String.format("Payment{id=%s, amount=%s, paymentDate=%s, method='%s', reference='%s'}",
+        return String.format("Payment{id=%s, amount=%s, paymentDate=%s, method=%s, reference='%s'}",
             id, amount, paymentDate, method, reference);
     }
 }

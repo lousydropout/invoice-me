@@ -6,9 +6,10 @@ import com.invoiceme.customer.domain.valueobjects.PaymentTerms;
 import com.invoiceme.invoice.domain.Invoice;
 import com.invoiceme.invoice.domain.InvoiceRepository;
 import com.invoiceme.invoice.domain.LineItem;
-import com.invoiceme.invoice.domain.Payment;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceNumber;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceStatus;
+import com.invoiceme.payment.domain.Payment;
+import com.invoiceme.payment.domain.PaymentMethod;
 import com.invoiceme.shared.domain.Address;
 import com.invoiceme.shared.domain.Email;
 import com.invoiceme.shared.domain.Money;
@@ -146,7 +147,7 @@ class InvoiceRepositoryTest {
             UUID.randomUUID(),
             Money.of(BigDecimal.valueOf(110), USD),
             LocalDate.now(),
-            "Bank Transfer",
+            PaymentMethod.BANK_TRANSFER,
             "REF-123"
         );
         invoice.recordPayment(payment);
@@ -190,7 +191,7 @@ class InvoiceRepositoryTest {
             UUID.randomUUID(),
             Money.of(BigDecimal.valueOf(50), USD),
             LocalDate.now(),
-            "Bank Transfer",
+            PaymentMethod.BANK_TRANSFER,
             "REF-123"
         );
         invoice.recordPayment(payment);
@@ -240,7 +241,7 @@ class InvoiceRepositoryTest {
             UUID.randomUUID(),
             Money.of(BigDecimal.valueOf(110), USD),
             LocalDate.now(),
-            "Bank Transfer",
+            PaymentMethod.BANK_TRANSFER,
             "REF-123"
         );
         invoice.recordPayment(payment);

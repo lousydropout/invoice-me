@@ -2,7 +2,8 @@ package com.invoiceme.invoice.application.commands;
 
 import com.invoiceme.invoice.domain.Invoice;
 import com.invoiceme.invoice.domain.InvoiceRepository;
-import com.invoiceme.invoice.domain.Payment;
+import com.invoiceme.payment.domain.Payment;
+import com.invoiceme.payment.domain.PaymentMethod;
 import com.invoiceme.shared.application.bus.DomainEventPublisher;
 import com.invoiceme.shared.application.errors.ApplicationError;
 import com.invoiceme.shared.domain.Money;
@@ -36,11 +37,12 @@ public class RecordPaymentHandler {
         // Create payment value object
         Currency currency = Currency.getInstance(command.currency());
         Money amount = Money.of(command.amount(), currency);
+        PaymentMethod paymentMethod = parsePaymentMethod(command.method());
         Payment payment = new Payment(
             command.paymentId(),
             amount,
             command.paymentDate(),
-            command.method(),
+            paymentMethod,
             command.reference()
         );
 
@@ -50,6 +52,27 @@ public class RecordPaymentHandler {
         // Save and publish events
         invoiceRepository.save(invoice);
         eventPublisher.publish(invoice.pullDomainEvents());
+    }
+
+    private PaymentMethod parsePaymentMethod(String method) {
+        if (method == null || method.isBlank()) {
+            throw new IllegalArgumentException("Payment method cannot be null or blank");
+        }
+        try {
+            // Try to parse as enum name (e.g., "BANK_TRANSFER")
+            return PaymentMethod.valueOf(method.toUpperCase().replace(" ", "_"));
+        } catch (IllegalArgumentException e) {
+            // If not a valid enum, try common mappings
+            String normalized = method.toUpperCase().replace(" ", "_");
+            return switch (normalized) {
+                case "BANK_TRANSFER", "WIRE", "WIRE_TRANSFER" -> PaymentMethod.BANK_TRANSFER;
+                case "CREDIT_CARD", "CARD", "CC" -> PaymentMethod.CREDIT_CARD;
+                case "DEBIT_CARD", "DEBIT" -> PaymentMethod.DEBIT_CARD;
+                case "CHECK", "CHEQUE" -> PaymentMethod.CHECK;
+                case "CASH" -> PaymentMethod.CASH;
+                default -> PaymentMethod.OTHER;
+            };
+        }
     }
 }
 

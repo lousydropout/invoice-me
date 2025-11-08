@@ -1,5 +1,6 @@
 package com.invoiceme.invoice.infrastructure.persistence.entities;
 
+import com.invoiceme.payment.domain.PaymentMethod;
 import jakarta.persistence.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
@@ -26,8 +27,9 @@ public class PaymentEntity {
     @Column(name = "payment_date", nullable = false)
     private LocalDate paymentDate;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String method;
+    private PaymentMethod method;
 
     @Column
     private String reference;
@@ -65,11 +67,11 @@ public class PaymentEntity {
         this.paymentDate = paymentDate;
     }
 
-    public String getMethod() {
+    public PaymentMethod getMethod() {
         return method;
     }
 
-    public void setMethod(String method) {
+    public void setMethod(PaymentMethod method) {
         this.method = method;
     }
 

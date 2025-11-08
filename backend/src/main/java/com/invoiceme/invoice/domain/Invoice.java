@@ -7,6 +7,7 @@ import com.invoiceme.invoice.domain.events.InvoiceUpdated;
 import com.invoiceme.invoice.domain.events.PaymentRecorded;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceNumber;
 import com.invoiceme.invoice.domain.valueobjects.InvoiceStatus;
+import com.invoiceme.payment.domain.Payment;
 import com.invoiceme.shared.domain.DomainEvent;
 import com.invoiceme.shared.domain.Money;
 

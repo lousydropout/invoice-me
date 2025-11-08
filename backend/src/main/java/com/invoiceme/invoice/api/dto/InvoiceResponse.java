@@ -2,7 +2,7 @@ package com.invoiceme.invoice.api.dto;
 
 import com.invoiceme.invoice.domain.Invoice;
 import com.invoiceme.invoice.domain.LineItem;
-import com.invoiceme.invoice.domain.Payment;
+import com.invoiceme.payment.domain.Payment;
 import com.invoiceme.shared.domain.Money;
 
 import java.math.BigDecimal;
@@ -105,7 +105,7 @@ public record InvoiceResponse(
             payment.getId(),
             toMoneyResponse(payment.getAmount()),
             payment.getPaymentDate(),
-            payment.getMethod(),
+            payment.getMethod().name(),
             payment.getReference()
         );
     }
