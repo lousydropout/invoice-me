@@ -1,4 +1,4 @@
-name: Build and Push to ECR
+name: Build, Push to ECR, and Deploy to ECS
 
 on:
   push:
@@ -11,10 +11,12 @@ env:
   AWS_REGION: us-east-1  # Replace with your AWS region (e.g., eu-west-1, ap-southeast-1)
   AWS_ACCOUNT_ID: "971422717446"  # Replace with your 12-digit AWS account ID
   ECR_REPOSITORY: vincent-chan/invoice-me  # ECR repository name (default: invoiceme-api)
+  ECS_CLUSTER: invoiceme-cluster  # ECS cluster name
+  ECS_SERVICE: invoiceme-service  # ECS service name
 
 jobs:
   build-and-push:
-    name: Build Docker Image and Push to ECR
+    name: Build Docker Image, Push to ECR, and Update ECS
     runs-on: ubuntu-latest
 
     permissions:
@@ -31,6 +33,7 @@ jobs:
       #    - AWS_ACCESS_KEY_ID: IAM user access key with ECR push permissions
       #    - AWS_SECRET_ACCESS_KEY: IAM user secret key
       # 3. Ensure IAM user/role has these permissions:
+      #    ECR permissions:
       #    - ecr:GetAuthorizationToken
       #    - ecr:BatchCheckLayerAvailability
       #    - ecr:GetDownloadUrlForLayer
@@ -39,6 +42,9 @@ jobs:
       #    - ecr:InitiateLayerUpload
       #    - ecr:UploadLayerPart
       #    - ecr:CompleteLayerUpload
+      #    ECS permissions:
+      #    - ecs:UpdateService
+      #    - ecs:DescribeServices
 
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v4
@@ -63,4 +69,21 @@ jobs:
             ${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:latest
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache,mode=max
+
+      - name: Force ECS service update
+        run: |
+          echo "Forcing new deployment of ECS service..."
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "Waiting for service to stabilize..."
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --region ${{ env.AWS_REGION }}
+          
+          echo "ECS service update completed successfully!"
 
