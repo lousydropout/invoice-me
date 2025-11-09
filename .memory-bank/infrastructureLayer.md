@@ -393,7 +393,7 @@ spring:
 - **Aurora Serverless v2**: Auto-scaling PostgreSQL (0.5-1 ACU)
 - **ECS Fargate**: Container hosting (512 MB, 256 CPU)
 - **Application Load Balancer**: HTTPS endpoint with ACM certificate
-- **Route53**: DNS with A Record ALIAS to ALB (`invoiceme.vincentchan.cloud`)
+- **Route53**: DNS with A Record ALIAS to ALB (`invoice-me.vincentchan.cloud`)
 - **CloudWatch Logs**: Application logging
 - **Secrets Manager**: Database credentials storage
 

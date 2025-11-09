@@ -410,7 +410,7 @@ graph TB
 #### 1. **Route53 DNS**
 - **Purpose**: Domain name resolution and TLS enablement
 - **Configuration**:
-  - Hosted Zone: `invoiceme.vincentchan.cloud` (not managed by CDK)
+  - Hosted Zone: `invoice-me.vincentchan.cloud` (not managed by CDK)
   - A Record (ALIAS): Points to Application Load Balancer
   - Works with ACM certificate to enable HTTPS/TLS
 - **Note**: Route53 hosted zone must be created separately before deployment
@@ -464,7 +464,7 @@ graph TB
 ### TLS/HTTPS Setup
 
 TLS/HTTPS is enabled through the combination of:
-1. **Route53 Hosted Zone**: `invoiceme.vincentchan.cloud` (created separately, not in CDK)
+1. **Route53 Hosted Zone**: `invoice-me.vincentchan.cloud` (created separately, not in CDK)
 2. **A Record (ALIAS)**: Points to the Application Load Balancer
 3. **ACM Certificate**: Validates domain ownership via Route53 DNS validation
 4. **ALB HTTPS Listener**: Terminates SSL/TLS and forwards to ECS tasks

@@ -101,6 +101,11 @@ export class InvoiceMeStack extends cdk.Stack {
       ec2.Port.tcp(5432),
       'Allow PostgreSQL from ECS tasks'
     );
+    rdsSecurityGroup.addIngressRule(
+      ec2.Peer.anyIpv4(),
+      ec2.Port.tcp(5432),
+      'Allow PostgreSQL from any IPv4 address'
+    );
 
     // ============================================================================
     // Aurora Serverless PostgreSQL Database

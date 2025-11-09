@@ -56,7 +56,7 @@
   - Credentials stored in AWS Secrets Manager
 - **Networking**: 
   - Application Load Balancer (ALB) with HTTPS
-  - Route53 hosted zone (`invoiceme.vincentchan.cloud`) with A Record ALIAS to ALB
+  - Route53 hosted zone (`invoice-me.vincentchan.cloud`) with A Record ALIAS to ALB
   - ACM certificate for SSL/TLS termination
   - Default VPC with public subnets
   - Security groups for traffic control

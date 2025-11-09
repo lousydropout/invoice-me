@@ -726,7 +726,7 @@
 - Optional: `DOMAIN_NAME`, `ECR_REPOSITORY_NAME`, `ECR_IMAGE_TAG`, BasicAuth credentials
 
 **Manual Steps Required:**
-1. Create Route53 hosted zone (`invoiceme.vincentchan.cloud`)
+1. Create Route53 hosted zone (`invoice-me.vincentchan.cloud`)
 2. Configure `.env` file with AWS account details
 3. Bootstrap CDK (first time only)
 4. Deploy via `cdk deploy`
