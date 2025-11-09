@@ -6,33 +6,30 @@ This directory contains the complete architectural analysis and implementation g
 
 ### Core Documents (Start Here)
 
-1. **`.memory-bank/projectbrief.md`** - Project overview, goals, and requirements (PRD v1.2)
-2. **`.memory-bank/technicalSpecification.md`** - **Complete technical specification for implementation (TSD)**
-3. **`.memory-bank/canonicalDomainModel.md`** - Complete domain model specification (3 subdomains)
-4. **`.memory-bank/architectureDecisions.md`** - All validated architectural decisions
-5. **`.memory-bank/acceptanceCriteria.md`** - Complete acceptance criteria checklist
+1. **`.memory-bank/projectbrief.md`** - Project overview, goals, and requirements
+2. **`.memory-bank/canonicalDomainModel.md`** - Complete domain model specification (3 subdomains)
+3. **`.memory-bank/architectureDecisions.md`** - All validated architectural decisions
+4. **`.memory-bank/implementationTasks.md`** - **Complete implementation task list with acceptance criteria**
 
 ### Implementation Guides (By Layer)
 
-6. **`.memory-bank/applicationLayer.md`** - Command handlers and application service patterns
-7. **`.memory-bank/queryLayer.md`** - Query handlers and CQRS read side patterns
-8. **`.memory-bank/eventHandling.md`** - Domain event publishing and handling
-9. **`.memory-bank/infrastructureLayer.md`** - Repository adapters, JPA entities, PostgreSQL
-10. **`.memory-bank/apiLayer.md`** - REST controllers, DTOs, OpenAPI specification
+5. **`.memory-bank/applicationLayer.md`** - Command handlers and application service patterns
+6. **`.memory-bank/queryLayer.md`** - Query handlers and CQRS read side patterns
+7. **`.memory-bank/eventHandling.md`** - Domain event publishing and handling
+8. **`.memory-bank/infrastructureLayer.md`** - Repository adapters, JPA entities, PostgreSQL
+9. **`.memory-bank/apiLayer.md`** - REST controllers, DTOs, OpenAPI specification
 
 ### Analysis & Patterns
 
-11. **`.memory-bank/eventStorming.md`** - Event storming (visual narrative + command-handler matrix)
-12. **`.memory-bank/systemPatterns.md`** - Architecture principles and design patterns
-13. **`.memory-bank/domainModel.md`** - Detailed domain structure and business requirements
-14. **`.memory-bank/activeContext.md`** - Current state, what's missing, next steps
-15. **`.memory-bank/techContext.md`** - Technology stack and configuration
-16. **`.memory-bank/vsaArchitecture.md`** - Vertical Slice Architecture detailed guide
+10. **`.memory-bank/eventStorming.md`** - Event storming (visual narrative + command-handler matrix)
+11. **`.memory-bank/systemPatterns.md`** - Architecture principles and design patterns
+12. **`.memory-bank/vsaArchitecture.md`** - Vertical Slice Architecture detailed guide
+13. **`.memory-bank/technicalSpecification.md`** - Technical specification document (reference)
 
 ### Progress Tracking
 
-17. **`.memory-bank/implementationTasks.md`** - **Complete implementation task list (8 epics, 25 tasks)**
-18. **`.memory-bank/progress.md`** - Implementation progress log
+14. **`.memory-bank/progress.md`** - Implementation progress log
+15. **`.memory-bank/techContext.md`** - Technology stack and configuration
 
 ---
 
@@ -73,8 +70,8 @@ This directory contains the complete architectural analysis and implementation g
 ### Infrastructure
 - **Repositories**: Domain interfaces, infrastructure implementations
 - **Adapters**: Bridge domain and JPA entities via mappers
-- **Database**: PostgreSQL 17 (local Docker, AWS Aurora Serverless v2)
-- **Migrations**: Flyway (optional)
+- **Database**: PostgreSQL 17.4 (local Docker, AWS Aurora Serverless v2)
+- **Schema Management**: Spring Boot SQL initialization (`schema.sql`)
 - **Testing**: Testcontainers for integration tests
 
 ---
@@ -83,18 +80,19 @@ This directory contains the complete architectural analysis and implementation g
 
 **See:** `.memory-bank/implementationTasks.md` for complete, detailed task breakdown.
 
-### Quick Overview (8 Epics)
+### Quick Overview (9 Epics)
 
-1. **Epic 1: Setup & Infrastructure** - Project initialization, Docker, BasicAuth, shared kernel
-2. **Epic 2: Customer Context** - Customer aggregate, repository, commands, REST API
-3. **Epic 3: Invoice Context** - Invoice aggregate, LineItem, Payment, commands, REST API, events
-4. **Epic 4: Payment Context** - Payment entity, manual payment command
-5. **Epic 5: CQRS Read Side** - Read models, query handlers, read API
-6. **Epic 6: Cross-Cutting** - Logging, error handling, validation
-7. **Epic 7: Testing** - Unit tests, integration tests, API validation
-8. **Epic 8: Deployment** - AWS Aurora + Fargate
+1. **Epic 1: Setup & Infrastructure** ✅ - Project initialization, Docker, BasicAuth, shared kernel
+2. **Epic 2: Customer Context** ✅ - Customer aggregate, repository, commands, REST API
+3. **Epic 3: Invoice Context** ✅ - Invoice aggregate, LineItem, Payment, commands, REST API, events
+4. **Epic 4: Payment Context** ✅ - Payment entity, manual payment command
+5. **Epic 5: CQRS Read Side** ✅ - Read models, query handlers, read API
+6. **Epic 6: Cross-Cutting** ✅ - Logging, error handling, validation
+7. **Epic 7: Testing** ✅ - Unit tests, integration tests, API validation
+8. **Epic 8: Operational Clarity** ✅ - OpenAPI, event persistence, error envelope, schema management, seed data
+9. **Epic 9: AWS Deployment** ⚙️ - CDK infrastructure ready, manual deployment pending
 
-**Total:** 25 tasks (15 automatable, 8 require verification, 2 manual)
+**Total:** 30 tasks (19 automatable, 9 require verification, 2 manual)
 
 ---
 
@@ -126,7 +124,7 @@ activeContext.md (current state)
 ✅ **Event Flow**: Domain → Application → Infrastructure (synchronous, in-memory, AFTER_COMMIT)
 ✅ **CQRS**: Commands (writes) vs Queries (reads) clearly separated
 ✅ **VSA**: Code organized by bounded context (vertical slices), not by technical layers
-✅ **Stack Versions**: Java 21, Spring Boot 3.5.x, Gradle 8.14.x, PostgreSQL 17
+✅ **Stack Versions**: Java 21, Spring Boot 3.5.0, Gradle 8.14.x, PostgreSQL 17.4
 ✅ **Event Publishing**: Synchronous, in-memory only (no outbox, no distributed event store)
 ✅ **Testing**: Testcontainers for integration tests
 ✅ **Performance**: CRUD latency < 200 ms average
@@ -136,8 +134,8 @@ activeContext.md (current state)
 
 ## Notes
 
-- All documents prioritize information from the current analysis session
-- Scaffold state is clearly marked as "to be refactored"
-- Future evolution paths are documented but not required for MVP
+- All documents reflect the current implementation state
+- Implementation is complete through Epic 8 (Operational Clarity)
+- AWS infrastructure code is ready for deployment (Epic 9)
 - All architectural decisions are validated and consistent across documents
 

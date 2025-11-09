@@ -343,110 +343,88 @@ spring:
     password: invoiceme
   jpa:
     hibernate:
-      ddl-auto: validate     # Use 'validate' with Flyway migrations
+      ddl-auto: validate     # Use 'validate' with schema.sql
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
         format_sql: true
     open-in-view: false
-  flyway:
-    enabled: true
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
 ```
 
-With that, Spring Boot automatically discovers your `JpaRepository` and connects to your `postgres` service (same host name via Docker network).
+With that, Spring Boot automatically discovers your `JpaRepository` and connects to your `postgres` service (same host name via Docker network). The schema is initialized from `schema.sql` on startup.
 
-### Production (AWS Aurora Serverless)
+### Production (AWS Aurora Serverless v2)
 
-When deploying:
+**Infrastructure**: Managed via AWS CDK (TypeScript) in `infra/cdk/`
 
-* Use an RDS/Aurora PostgreSQL cluster
-* Replace environment variables:
+**Deployment Configuration:**
 
-  ```
-  SPRING_DATASOURCE_URL=jdbc:postgresql://<aurora-endpoint>:5432/invoiceme
-  SPRING_DATASOURCE_USERNAME=<aws_secret_username>
-  SPRING_DATASOURCE_PASSWORD=<aws_secret_password>
-  ```
+* Aurora Serverless v2 PostgreSQL 17.4 cluster
+* Environment variables configured via CDK:
+  - `DB_HOST` - Aurora cluster endpoint (auto-configured)
+  - `DB_PORT` - `5432`
+  - `DB_NAME` - `invoiceme`
+  - `DB_USER` - From AWS Secrets Manager
+  - `DB_PASSWORD` - From AWS Secrets Manager
+  - `SPRING_PROFILES_ACTIVE` - `prod`
 
-* No code changes — Spring abstracts this fully
-
-**Production Configuration:**
+**Production Configuration (`application-prod.yml`):**
 
 ```yaml
 spring:
+  datasource:
+    url: jdbc:postgresql://${DB_HOST}:${DB_PORT:5432}/${DB_NAME}
+    username: ${DB_USER}
+    password: ${DB_PASSWORD}
   jpa:
     hibernate:
       ddl-auto: validate
-  datasource:
-    hikari:
-      maximum-pool-size: 5
-      connection-timeout: 30000
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
 ```
 
-Aurora Serverless v2 supports Postgres 14–17 compatible dialects — Hibernate 6 handles this fine.
+**AWS Infrastructure Components:**
+- **Aurora Serverless v2**: Auto-scaling PostgreSQL (0.5-1 ACU)
+- **ECS Fargate**: Container hosting (512 MB, 256 CPU)
+- **Application Load Balancer**: HTTPS endpoint with ACM certificate
+- **Route53**: DNS with A Record ALIAS to ALB (`invoiceme.vincentchan.cloud`)
+- **CloudWatch Logs**: Application logging
+- **Secrets Manager**: Database credentials storage
+
+**CDK Configuration:**
+- Environment variables in `infra/cdk/.env` file
+- Required: `AWS_ACCOUNT_ID`, `AWS_REGION`, `ACM_CERTIFICATE_ARN`
+- Optional: `DOMAIN_NAME`, `ECR_REPOSITORY_NAME`, `ECR_IMAGE_TAG`, BasicAuth credentials
+
+Aurora Serverless v2 supports PostgreSQL 17.4 — Hibernate 6 handles this fine.
 
 ---
 
-## Database Schema (Flyway Migrations)
+## Database Schema (Spring Boot SQL Initialization)
 
-Use Flyway for schema versioning. Example migration:
+**Current Implementation**: Spring Boot SQL initialization using `schema.sql`
+- Single consolidated schema file: `backend/src/main/resources/schema.sql`
+- Automatically executed on startup when `spring.sql.init.mode=always`
+- Replaces Flyway migrations for simplified schema management
 
-**`V1__init.sql`**
+**Schema File**: `backend/src/main/resources/schema.sql`
 
-```sql
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+The schema file includes:
+- `customers` table (Customer aggregate)
+- `invoices` table (Invoice aggregate)
+- `line_items` table (LineItem value objects)
+- `payments` table (Payment entities)
+- `domain_events` table (event persistence for debugging/audit)
+- All indexes and foreign key constraints
+- UUID extension enabled
 
-CREATE TABLE customers (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    name TEXT NOT NULL,
-    email TEXT NOT NULL UNIQUE,
-    phone TEXT,
-    street TEXT,
-    city TEXT,
-    postal_code TEXT,
-    country TEXT,
-    payment_terms TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE invoices (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    customer_id UUID NOT NULL REFERENCES customers(id),
-    invoice_number TEXT NOT NULL UNIQUE,
-    issue_date DATE NOT NULL,
-    due_date DATE NOT NULL,
-    status TEXT NOT NULL CHECK (status IN ('DRAFT', 'SENT', 'PAID')),
-    total NUMERIC(18,2) NOT NULL CHECK (total > 0),
-    notes TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE line_items (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-    description TEXT NOT NULL,
-    quantity NUMERIC(18,2) NOT NULL CHECK (quantity > 0),
-    unit_price NUMERIC(18,2) NOT NULL CHECK (unit_price > 0),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE TABLE payments (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    invoice_id UUID NOT NULL REFERENCES invoices(id) ON DELETE CASCADE,
-    amount NUMERIC(18,2) NOT NULL CHECK (amount > 0),
-    payment_date DATE NOT NULL,
-    method TEXT NOT NULL,
-    reference TEXT,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
-);
-
-CREATE INDEX idx_invoices_customer_id ON invoices(customer_id);
-CREATE INDEX idx_invoices_status ON invoices(status);
-CREATE INDEX idx_line_items_invoice_id ON line_items(invoice_id);
-CREATE INDEX idx_payments_invoice_id ON payments(invoice_id);
-```
+See `backend/src/main/resources/schema.sql` for the complete schema definition.
 
 ---
 
@@ -508,7 +486,7 @@ spring:
 | ------------------ | ----------------------------------------------------------------------- | ------------------------ |
 | **Domain**         | Define repository contracts (`InvoiceRepository`, `CustomerRepository`) | Pure Java                |
 | **Infrastructure** | Implement via adapters using Spring Data JPA                            | Spring Boot, Hibernate   |
-| **Database**       | PostgreSQL (local via Docker, AWS via Aurora)                           | PostgreSQL 17-compatible |
+| **Database**       | PostgreSQL 17.4 (local via Docker, AWS via Aurora)                     | PostgreSQL 17.4-compatible |
 
 ### Key Principles
 
@@ -527,10 +505,10 @@ spring:
 - [ ] Create JPA entities in infrastructure layer
 - [ ] Create Spring Data JPA interfaces
 - [ ] Create mapper components (CustomerMapper, InvoiceMapper)
-- [ ] Create adapter implementations (CustomerRepositoryAdapter, InvoiceRepositoryAdapter)
-- [ ] Configure PostgreSQL connection (local and production)
-- [ ] Create Flyway migrations for schema
-- [ ] Add optimistic locking (`@Version`) to entities
+- [x] Create adapter implementations (CustomerRepositoryAdapter, InvoiceRepositoryAdapter)
+- [x] Configure PostgreSQL connection (local and production)
+- [x] Create Spring Boot SQL initialization schema (`schema.sql`)
+- [x] Add optimistic locking (`@Version`) to entities
 - [ ] Configure H2 for integration tests
 - [ ] Test adapter implementations with real database
 

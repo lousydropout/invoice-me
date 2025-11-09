@@ -5,15 +5,22 @@ InvoiceMe is a production-quality ERP-style invoicing system built with Java 21 
 
 **Version:** 1.2 (Consolidated DDD & Assessment Spec)
 
-**Current State:** The repository contains a scaffolded "hello-world" Spring Boot application with basic Invoice CRUD operations. This scaffold provides the foundation (Java 21, Spring Boot 3.5, PostgreSQL, Docker) but does not yet implement the actual business domain.
+**Current State:** Fully implemented invoicing system with:
+- Complete Invoice and Customer bounded contexts
+- Payment tracking and balance calculations
+- CQRS query endpoints
+- Domain events with persistence
+- OpenAPI documentation
+- Comprehensive test suite
+- AWS CDK infrastructure ready for deployment
 
-**Target State:** A fully-featured invoicing system with rich domain models, proper DDD boundaries, CQRS separation, and all required business capabilities.
+**Target State:** Production deployment and future enhancements (reporting, payment integrations, etc.)
 
 **Stack Versions:**
 - Java: **21**
-- Spring Boot: **3.5.x**
-- Gradle: **8.14.x**
-- PostgreSQL: **17**
+- Spring Boot: **3.5.0**
+- Gradle: **8.14.x** (Kotlin DSL)
+- PostgreSQL: **17.4**
 
 ## Business Scenario
 > A business issues invoices to customers, collects payments (potentially through Stripe or manual entry), and needs to track who owes what, who has paid, and when.
@@ -73,10 +80,10 @@ InvoiceMe is a production-quality ERP-style invoicing system built with Java 21 
 - See `.memory-bank/architectureDecisions.md` for details
 
 ## Technical Constraints
-- **Backend:** Java 21 + Spring Boot 3.5 (required)
-- **Database:** PostgreSQL (preferred) or H2 for testing
+- **Backend:** Java 21 + Spring Boot 3.5.0 (required)
+- **Database:** PostgreSQL 17.4 (preferred) or H2 for testing
 - **Architecture:** Must follow DDD, CQRS, and VSA principles
-- **Deployment:** AWS ECS Fargate + RDS (infrastructure already scaffolded)
+- **Deployment:** AWS ECS Fargate + Aurora Serverless v2 (infrastructure ready)
 
 ## Success Criteria (Acceptance Criteria)
 ✅ DDD implemented (aggregates, entities, value objects, domain events)

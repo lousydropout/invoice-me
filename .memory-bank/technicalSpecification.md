@@ -11,7 +11,7 @@
 ### Environment Setup
 - **Language**: Java 21
 - **Build Tool**: Gradle 8.14.x
-- **Framework**: Spring Boot 3.5.x
+- **Framework**: Spring Boot 3.5.0
 - **Database**: PostgreSQL 17.4
 - **ORM**: Spring Data JPA (Hibernate)
 - **Auth**: Spring Security BasicAuth

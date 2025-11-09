@@ -28,8 +28,10 @@ export class InvoiceMeStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props?: cdk.StackProps) {
     super(scope, id, props);
 
-    // Get domain name from context, with fallback
-    const domainName = this.node.tryGetContext('domainName') || 'invoice-me.vincentchan.cloud';
+    // Get domain name from context or environment variable, with fallback
+    const domainName = this.node.tryGetContext('domainName') 
+      || process.env.DOMAIN_NAME 
+      || 'invoice-me.vincentchan.cloud';
 
     // ============================================================================
     // VPC & Networking
@@ -209,10 +211,11 @@ export class InvoiceMeStack extends cdk.Stack {
      * ECR Repository Reference
      * References the existing ECR repository for the container image
      */
+    const ecrRepositoryName = process.env.ECR_REPOSITORY_NAME || 'vincent-chan/invoice-me';
     const ecrRepository = ecr.Repository.fromRepositoryName(
       this,
       'InvoiceMeEcrRepository',
-      'vincent-chan/invoice-me'
+      ecrRepositoryName
     );
 
     /**
@@ -220,8 +223,9 @@ export class InvoiceMeStack extends cdk.Stack {
      * Uses the ECR image and configures environment variables from Aurora secret
      * fromEcrRepository() automatically grants necessary ECR permissions
      */
+    const imageTag = process.env.ECR_IMAGE_TAG || 'latest';
     const container = taskDefinition.addContainer('InvoiceMeContainer', {
-      image: ecs.ContainerImage.fromEcrRepository(ecrRepository, 'latest'),
+      image: ecs.ContainerImage.fromEcrRepository(ecrRepository, imageTag),
       logging: ecs.LogDrivers.awsLogs({
         streamPrefix: 'invoiceme',
         logGroup: logGroup,
@@ -231,10 +235,21 @@ export class InvoiceMeStack extends cdk.Stack {
         DB_PORT: '5432',
         DB_NAME: 'invoiceme',
         SPRING_PROFILES_ACTIVE: 'prod',
+        // BasicAuth credentials from environment variables (if not using Secrets Manager)
+        ...(process.env.SPRING_SECURITY_USER_NAME && {
+          SPRING_SECURITY_USER_NAME: process.env.SPRING_SECURITY_USER_NAME,
+        }),
+        ...(process.env.SPRING_SECURITY_USER_PASSWORD && {
+          SPRING_SECURITY_USER_PASSWORD: process.env.SPRING_SECURITY_USER_PASSWORD,
+        }),
       },
       secrets: {
         DB_USER: ecs.Secret.fromSecretsManager(dbSecret, 'username'),
         DB_PASSWORD: ecs.Secret.fromSecretsManager(dbSecret, 'password'),
+        // Optional: Use Secrets Manager for BasicAuth credentials instead of environment variables
+        // Uncomment and configure if you prefer Secrets Manager:
+        // SPRING_SECURITY_USER_NAME: ecs.Secret.fromSecretsManager(authSecret, 'username'),
+        // SPRING_SECURITY_USER_PASSWORD: ecs.Secret.fromSecretsManager(authSecret, 'password'),
       },
     });
 
@@ -249,11 +264,16 @@ export class InvoiceMeStack extends cdk.Stack {
 
     /**
      * Reference the existing ACM certificate for HTTPS
+     * Certificate ARN is read from environment variable
      */
+    const certificateArn = process.env.ACM_CERTIFICATE_ARN;
+    if (!certificateArn) {
+      throw new Error('ACM_CERTIFICATE_ARN environment variable is required. Please set it in your .env file.');
+    }
     const certificate = acm.Certificate.fromCertificateArn(
       this,
       'InvoiceMeCert',
-      'arn:aws:acm:us-east-1:971422717446:certificate/31347fcf-1c96-4e72-871d-03213a799cdc'
+      certificateArn
     );
 
     /**

@@ -57,20 +57,46 @@ cd infra/cdk
 npm install
 ```
 
-### 2. Verify Configuration
+### 2. Configure Environment Variables
 
-Before deploying, verify the account ID and region in `bin/invoiceme.ts`:
+Copy the example environment file and configure it with your values:
 
-- Account ID: `971422717446` (extracted from ECR URL)
-- Region: `us-east-1`
+```bash
+cp .env.example .env
+```
 
-**Important**: Ensure these match your AWS account before proceeding.
+Edit `.env` and update the following values:
+
+**Required:**
+- `AWS_ACCOUNT_ID`: Your AWS account ID (default: `971422717446`)
+- `AWS_REGION`: Your AWS region (default: `us-east-1`)
+- `DOMAIN_NAME`: Your domain name (default: `invoice-me.vincentchan.cloud`)
+- `ECR_REPOSITORY_NAME`: Your ECR repository name (default: `vincent-chan/invoice-me`)
+- `ECR_IMAGE_TAG`: Docker image tag to deploy (default: `latest`)
+- `ACM_CERTIFICATE_ARN`: Your ACM certificate ARN for HTTPS (required)
+
+**Optional - BasicAuth Credentials:**
+- `SPRING_SECURITY_USER_NAME`: BasicAuth username (optional, defaults to `admin` if not set)
+- `SPRING_SECURITY_USER_PASSWORD`: BasicAuth password (optional, defaults to `admin` if not set)
+
+**BasicAuth Options:**
+1. **Set in `.env` file** (recommended for development/testing) - Simply add the values above
+2. **Use AWS Secrets Manager** (recommended for production) - See "BasicAuth via Secrets Manager" section below
+3. **Use defaults** - If neither is configured, Spring Boot uses `admin`/`admin` (not recommended for production)
+
+**Important**: Ensure these values match your AWS account and resources before proceeding.
+
+**Note**: The `.env` file is gitignored and will not be committed to version control.
 
 ### 3. Bootstrap CDK (First Time Only)
 
 If this is your first CDK deployment in this account/region, bootstrap CDK:
 
 ```bash
+# Use values from your .env file
+cdk bootstrap aws://${AWS_ACCOUNT_ID}/${AWS_REGION}
+
+# Or specify directly
 cdk bootstrap aws://971422717446/us-east-1
 ```
 
@@ -137,12 +163,21 @@ Expected response:
 
 The ECS task is configured with the following environment variables:
 
+**Database (automatically configured):**
 - `DB_HOST`: Automatically set to Aurora cluster endpoint
 - `DB_PORT`: `5432`
 - `DB_NAME`: `invoiceme`
 - `DB_USER`: Retrieved from AWS Secrets Manager (Aurora-generated secret)
 - `DB_PASSWORD`: Retrieved from AWS Secrets Manager (Aurora-generated secret)
+
+**Application:**
 - `SPRING_PROFILES_ACTIVE`: `prod`
+
+**BasicAuth (optional, from `.env` file):**
+- `SPRING_SECURITY_USER_NAME`: BasicAuth username (if set in `.env`)
+- `SPRING_SECURITY_USER_PASSWORD`: BasicAuth password (if set in `.env`)
+
+If BasicAuth credentials are not set in `.env`, Spring Boot will use the default values (`admin`/`admin`).
 
 ### Database Credentials
 
@@ -159,6 +194,37 @@ aws secretsmanager get-secret-value \
   --query SecretString \
   --output text | jq .
 ```
+
+### BasicAuth via Secrets Manager (Optional)
+
+For production deployments, you can store BasicAuth credentials in AWS Secrets Manager instead of using `.env`:
+
+1. **Create a secret in Secrets Manager:**
+   ```bash
+   aws secretsmanager create-secret \
+     --name invoiceme/basicauth/credentials \
+     --secret-string '{"username":"admin","password":"your-secure-password"}' \
+     --region us-east-1
+   ```
+
+2. **Update the CDK stack** (`lib/invoiceme-stack.ts`):
+   - Import Secrets Manager: `import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';`
+   - Reference the secret:
+     ```typescript
+     const authSecret = secretsmanager.Secret.fromSecretNameV2(
+       this,
+       'BasicAuthSecret',
+       'invoiceme/basicauth/credentials'
+     );
+     ```
+   - In the container `secrets` section, uncomment and use:
+     ```typescript
+     SPRING_SECURITY_USER_NAME: ecs.Secret.fromSecretsManager(authSecret, 'username'),
+     SPRING_SECURITY_USER_PASSWORD: ecs.Secret.fromSecretsManager(authSecret, 'password'),
+     ```
+   - Remove the environment variables from the `environment` section (or they will take precedence)
+
+**Note**: If you use Secrets Manager for BasicAuth, the environment variables in `.env` will be ignored. Secrets Manager values take precedence.
 
 ### Container Image
 
