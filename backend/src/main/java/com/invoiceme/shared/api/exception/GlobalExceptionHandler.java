@@ -1,6 +1,7 @@
 package com.invoiceme.shared.api.exception;
 
 import com.invoiceme.invoice.domain.exceptions.PaymentExceedsBalanceException;
+import com.invoiceme.shared.api.dto.ApiError;
 import com.invoiceme.shared.application.errors.ApplicationError;
 import com.invoiceme.shared.application.errors.ErrorCodes;
 import jakarta.persistence.EntityNotFoundException;
@@ -10,7 +11,6 @@ import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -35,11 +35,9 @@ public class GlobalExceptionHandler {
      * - 422 for validation()
      */
     @ExceptionHandler(ApplicationError.class)
-    public ResponseEntity<Map<String, Object>> handleApplicationError(ApplicationError ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", ex.getMessage());
-        response.put("code", ex.getCode());
-        return ResponseEntity.status(ex.getHttpStatus()).body(response);
+    public ResponseEntity<ApiError> handleApplicationError(ApplicationError ex) {
+        ApiError error = ApiError.of(ex.getCode(), ex.getMessage());
+        return ResponseEntity.status(ex.getHttpStatus()).body(error);
     }
 
     /**
@@ -47,14 +45,10 @@ public class GlobalExceptionHandler {
      * Returns 400 (BAD_REQUEST) with field-level error details.
      */
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String, Object>> handleValidationException(
+    public ResponseEntity<ApiError> handleValidationException(
             MethodArgumentNotValidException ex
     ) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", "Validation failed");
-        response.put("code", ErrorCodes.VALIDATION_FAILED);
-        
-        Map<String, String> fieldErrors = ex.getBindingResult()
+        Map<String, Object> fieldErrors = ex.getBindingResult()
                 .getFieldErrors()
                 .stream()
                 .collect(Collectors.toMap(
@@ -65,8 +59,12 @@ public class GlobalExceptionHandler {
                         (existing, replacement) -> existing
                 ));
         
-        response.put("details", fieldErrors);
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        ApiError error = ApiError.of(
+            ErrorCodes.VALIDATION_FAILED,
+            "Validation failed",
+            fieldErrors
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     /**
@@ -74,14 +72,15 @@ public class GlobalExceptionHandler {
      * Returns 404 (NOT_FOUND).
      */
     @ExceptionHandler(EntityNotFoundException.class)
-    public ResponseEntity<Map<String, Object>> handleEntityNotFoundException(
+    public ResponseEntity<ApiError> handleEntityNotFoundException(
             EntityNotFoundException ex
     ) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", "Resource not found");
-        response.put("code", ErrorCodes.NOT_FOUND);
-        response.put("details", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(response);
+        ApiError error = ApiError.of(
+            ErrorCodes.NOT_FOUND,
+            "Resource not found",
+            Map.of("message", ex.getMessage())
+        );
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     /**
@@ -89,14 +88,15 @@ public class GlobalExceptionHandler {
      * Returns 422 (UNPROCESSABLE_ENTITY).
      */
     @ExceptionHandler(PaymentExceedsBalanceException.class)
-    public ResponseEntity<Map<String, Object>> handlePaymentExceedsBalanceException(
+    public ResponseEntity<ApiError> handlePaymentExceedsBalanceException(
             PaymentExceedsBalanceException ex
     ) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", "Payment exceeds remaining balance");
-        response.put("code", ErrorCodes.BUSINESS_RULE_VIOLATION);
-        response.put("details", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(response);
+        ApiError error = ApiError.of(
+            ErrorCodes.BUSINESS_RULE_VIOLATION,
+            "Payment exceeds remaining balance",
+            Map.of("message", ex.getMessage())
+        );
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
     /**
@@ -104,14 +104,15 @@ public class GlobalExceptionHandler {
      * Returns 400 (BAD_REQUEST).
      */
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<Map<String, Object>> handleIllegalArgumentException(
+    public ResponseEntity<ApiError> handleIllegalArgumentException(
             IllegalArgumentException ex
     ) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", "Invalid argument");
-        response.put("code", ErrorCodes.INVALID_ARGUMENT);
-        response.put("details", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+        ApiError error = ApiError.of(
+            ErrorCodes.INVALID_ARGUMENT,
+            "Invalid argument",
+            Map.of("message", ex.getMessage())
+        );
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
     /**
@@ -119,13 +120,14 @@ public class GlobalExceptionHandler {
      * Returns 500 (INTERNAL_SERVER_ERROR).
      */
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<Map<String, Object>> handleGenericException(Exception ex) {
-        Map<String, Object> response = new HashMap<>();
-        response.put("error", "Internal server error");
-        response.put("code", ErrorCodes.INTERNAL_SERVER_ERROR);
+    public ResponseEntity<ApiError> handleGenericException(Exception ex) {
         // Only include details in development; in production, log but don't expose
-        response.put("details", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(response);
+        ApiError error = ApiError.of(
+            ErrorCodes.INTERNAL_SERVER_ERROR,
+            "Internal server error",
+            ex.getMessage() != null ? Map.of("message", ex.getMessage()) : null
+        );
+        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(error);
     }
 }
 

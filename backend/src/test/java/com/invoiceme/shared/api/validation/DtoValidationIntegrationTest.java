@@ -75,7 +75,7 @@ class DtoValidationIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(request))
             .andExpect(status().isBadRequest())
-            .andExpect(jsonPath("$", hasKey("error")))
+            .andExpect(jsonPath("$", hasKey("message")))
             .andExpect(jsonPath("$", hasKey("code")))
             .andExpect(jsonPath("$", hasKey("details")))
             .andReturn()
@@ -418,10 +418,10 @@ class DtoValidationIntegrationTest {
             .getContentAsString();
 
         // Verify error structure
-        String error = JsonPath.read(response, "$.error");
+        String message = JsonPath.read(response, "$.message");
         String code = JsonPath.read(response, "$.code");
         Object details = JsonPath.read(response, "$.details");
-        assertThat(error).isEqualTo("Validation failed");
+        assertThat(message).isEqualTo("Validation failed");
         assertThat(code).isEqualTo(ErrorCodes.VALIDATION_FAILED);
         assertThat(details).isNotNull();
         

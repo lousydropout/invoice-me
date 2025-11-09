@@ -1,6 +1,7 @@
 package com.invoiceme.shared.api.exception;
 
 import com.invoiceme.invoice.domain.exceptions.PaymentExceedsBalanceException;
+import com.invoiceme.shared.api.dto.ApiError;
 import com.invoiceme.shared.application.errors.ApplicationError;
 import com.invoiceme.shared.application.errors.ErrorCodes;
 import jakarta.persistence.EntityNotFoundException;
@@ -41,14 +42,15 @@ class GlobalExceptionHandlerTest {
         ApplicationError error = ApplicationError.notFound("Invoice");
 
         // When
-        ResponseEntity<Map<String, Object>> response = handler.handleApplicationError(error);
+        ResponseEntity<ApiError> response = handler.handleApplicationError(error);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        Map<String, Object> body = response.getBody();
+        ApiError body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.get("error")).isEqualTo("Invoice not found");
-        assertThat(body.get("code")).isEqualTo(ErrorCodes.NOT_FOUND);
+        assertThat(body.message()).isEqualTo("Invoice not found");
+        assertThat(body.code()).isEqualTo(ErrorCodes.NOT_FOUND);
+        assertThat(body.details()).isNull();
     }
 
     @Test
@@ -58,14 +60,15 @@ class GlobalExceptionHandlerTest {
         ApplicationError error = ApplicationError.conflict("Customer with email test@example.com already exists");
 
         // When
-        ResponseEntity<Map<String, Object>> response = handler.handleApplicationError(error);
+        ResponseEntity<ApiError> response = handler.handleApplicationError(error);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CONFLICT);
-        Map<String, Object> body = response.getBody();
+        ApiError body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.get("error")).isEqualTo("Customer with email test@example.com already exists");
-        assertThat(body.get("code")).isEqualTo(ErrorCodes.CONFLICT);
+        assertThat(body.message()).isEqualTo("Customer with email test@example.com already exists");
+        assertThat(body.code()).isEqualTo(ErrorCodes.CONFLICT);
+        assertThat(body.details()).isNull();
     }
 
     @Test
@@ -75,14 +78,15 @@ class GlobalExceptionHandlerTest {
         ApplicationError error = ApplicationError.validation("Invalid payment amount");
 
         // When
-        ResponseEntity<Map<String, Object>> response = handler.handleApplicationError(error);
+        ResponseEntity<ApiError> response = handler.handleApplicationError(error);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
-        Map<String, Object> body = response.getBody();
+        ApiError body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.get("error")).isEqualTo("Invalid payment amount");
-        assertThat(body.get("code")).isEqualTo(ErrorCodes.VALIDATION_ERROR);
+        assertThat(body.message()).isEqualTo("Invalid payment amount");
+        assertThat(body.code()).isEqualTo(ErrorCodes.VALIDATION_ERROR);
+        assertThat(body.details()).isNull();
     }
 
     @Test
@@ -99,17 +103,16 @@ class GlobalExceptionHandlerTest {
         when(bindingResult.getFieldErrors()).thenReturn(fieldErrors);
 
         // When
-        ResponseEntity<Map<String, Object>> response = handler.handleValidationException(ex);
+        ResponseEntity<ApiError> response = handler.handleValidationException(ex);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        Map<String, Object> body = response.getBody();
+        ApiError body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.get("error")).isEqualTo("Validation failed");
-        assertThat(body.get("code")).isEqualTo(ErrorCodes.VALIDATION_FAILED);
+        assertThat(body.message()).isEqualTo("Validation failed");
+        assertThat(body.code()).isEqualTo(ErrorCodes.VALIDATION_FAILED);
         
-        @SuppressWarnings("unchecked")
-        Map<String, String> details = (Map<String, String>) body.get("details");
+        Map<String, Object> details = body.details();
         assertThat(details).isNotNull();
         assertThat(details.get("customerId")).isEqualTo("must not be null");
         assertThat(details.get("lineItems")).isEqualTo("must not be empty");
@@ -122,15 +125,16 @@ class GlobalExceptionHandlerTest {
         EntityNotFoundException ex = new EntityNotFoundException("Invoice with id 123 not found");
 
         // When
-        ResponseEntity<Map<String, Object>> response = handler.handleEntityNotFoundException(ex);
+        ResponseEntity<ApiError> response = handler.handleEntityNotFoundException(ex);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
-        Map<String, Object> body = response.getBody();
+        ApiError body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.get("error")).isEqualTo("Resource not found");
-        assertThat(body.get("code")).isEqualTo(ErrorCodes.NOT_FOUND);
-        assertThat(body.get("details")).isEqualTo("Invoice with id 123 not found");
+        assertThat(body.message()).isEqualTo("Resource not found");
+        assertThat(body.code()).isEqualTo(ErrorCodes.NOT_FOUND);
+        assertThat(body.details()).isNotNull();
+        assertThat(body.details().get("message")).isEqualTo("Invoice with id 123 not found");
     }
 
     @Test
@@ -140,15 +144,16 @@ class GlobalExceptionHandlerTest {
         PaymentExceedsBalanceException ex = new PaymentExceedsBalanceException("Payment amount 1000 exceeds remaining balance 500");
 
         // When
-        ResponseEntity<Map<String, Object>> response = handler.handlePaymentExceedsBalanceException(ex);
+        ResponseEntity<ApiError> response = handler.handlePaymentExceedsBalanceException(ex);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.UNPROCESSABLE_ENTITY);
-        Map<String, Object> body = response.getBody();
+        ApiError body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.get("error")).isEqualTo("Payment exceeds remaining balance");
-        assertThat(body.get("code")).isEqualTo(ErrorCodes.BUSINESS_RULE_VIOLATION);
-        assertThat(body.get("details")).isEqualTo("Payment amount 1000 exceeds remaining balance 500");
+        assertThat(body.message()).isEqualTo("Payment exceeds remaining balance");
+        assertThat(body.code()).isEqualTo(ErrorCodes.BUSINESS_RULE_VIOLATION);
+        assertThat(body.details()).isNotNull();
+        assertThat(body.details().get("message")).isEqualTo("Payment amount 1000 exceeds remaining balance 500");
     }
 
     @Test
@@ -158,15 +163,16 @@ class GlobalExceptionHandlerTest {
         IllegalArgumentException ex = new IllegalArgumentException("Invalid invoice status");
 
         // When
-        ResponseEntity<Map<String, Object>> response = handler.handleIllegalArgumentException(ex);
+        ResponseEntity<ApiError> response = handler.handleIllegalArgumentException(ex);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.BAD_REQUEST);
-        Map<String, Object> body = response.getBody();
+        ApiError body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.get("error")).isEqualTo("Invalid argument");
-        assertThat(body.get("code")).isEqualTo(ErrorCodes.INVALID_ARGUMENT);
-        assertThat(body.get("details")).isEqualTo("Invalid invoice status");
+        assertThat(body.message()).isEqualTo("Invalid argument");
+        assertThat(body.code()).isEqualTo(ErrorCodes.INVALID_ARGUMENT);
+        assertThat(body.details()).isNotNull();
+        assertThat(body.details().get("message")).isEqualTo("Invalid invoice status");
     }
 
     @Test
@@ -176,15 +182,16 @@ class GlobalExceptionHandlerTest {
         RuntimeException ex = new RuntimeException("Unexpected error occurred");
 
         // When
-        ResponseEntity<Map<String, Object>> response = handler.handleGenericException(ex);
+        ResponseEntity<ApiError> response = handler.handleGenericException(ex);
 
         // Then
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
-        Map<String, Object> body = response.getBody();
+        ApiError body = response.getBody();
         assertThat(body).isNotNull();
-        assertThat(body.get("error")).isEqualTo("Internal server error");
-        assertThat(body.get("code")).isEqualTo(ErrorCodes.INTERNAL_SERVER_ERROR);
-        assertThat(body.get("details")).isEqualTo("Unexpected error occurred");
+        assertThat(body.message()).isEqualTo("Internal server error");
+        assertThat(body.code()).isEqualTo(ErrorCodes.INTERNAL_SERVER_ERROR);
+        assertThat(body.details()).isNotNull();
+        assertThat(body.details().get("message")).isEqualTo("Unexpected error occurred");
     }
 }
 
