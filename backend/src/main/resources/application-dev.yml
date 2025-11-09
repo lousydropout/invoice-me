@@ -1,0 +1,14 @@
+spring:
+  # Dev profile configuration
+  # This profile is used for local development with demo data seeding
+  # Note: Profile is activated via SPRING_PROFILES_ACTIVE environment variable
+
+logging:
+  level:
+    root: INFO
+    com.invoiceme: DEBUG
+    org.springframework: INFO
+    org.hibernate: INFO
+    org.hibernate.SQL: DEBUG
+    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+
