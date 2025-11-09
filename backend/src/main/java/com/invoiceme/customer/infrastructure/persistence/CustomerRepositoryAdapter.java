@@ -5,8 +5,10 @@ import com.invoiceme.customer.domain.CustomerRepository;
 import com.invoiceme.customer.infrastructure.persistence.mappers.CustomerMapper;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * Repository adapter that implements the domain CustomerRepository interface.
@@ -65,6 +67,13 @@ public class CustomerRepositoryAdapter implements CustomerRepository {
     @Override
     public boolean existsByEmail(String email) {
         return jpaRepository.existsByEmail(email);
+    }
+
+    @Override
+    public List<Customer> findAll() {
+        return jpaRepository.findAll().stream()
+            .map(mapper::toDomain)
+            .collect(Collectors.toList());
     }
 }
 

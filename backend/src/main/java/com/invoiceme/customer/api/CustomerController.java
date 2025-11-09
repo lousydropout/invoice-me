@@ -74,9 +74,10 @@ public class CustomerController {
 
     @GetMapping
     public ResponseEntity<List<CustomerResponse>> listAll() {
-        // TODO: Implement query handler for listing customers (Epic 5: CQRS Read Side)
-        // For now, return empty list
-        return ResponseEntity.ok(List.of());
+        List<CustomerResponse> customers = customerRepository.findAll().stream()
+            .map(CustomerResponse::from)
+            .toList();
+        return ResponseEntity.ok(customers);
     }
 
     @GetMapping("/{id}")

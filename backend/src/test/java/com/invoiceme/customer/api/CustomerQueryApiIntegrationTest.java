@@ -12,7 +12,6 @@ import com.invoiceme.payment.domain.PaymentMethod;
 import com.invoiceme.shared.domain.Address;
 import com.invoiceme.shared.domain.Email;
 import com.invoiceme.shared.domain.Money;
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +35,6 @@ import java.util.Currency;
 import java.util.List;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 import static org.hamcrest.Matchers.*;
@@ -151,6 +149,24 @@ class CustomerQueryApiIntegrationTest {
         // Flush to ensure data is visible to JdbcTemplate
         entityManager.flush();
         entityManager.clear();
+    }
+
+    @Test
+    @DisplayName("T5.3.4 - GET /api/customers - List all customers")
+    void listAllCustomers() throws Exception {
+        // When/Then
+        mockMvc.perform(get("/api/customers")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(2))))
+            .andExpect(jsonPath("$[?(@.id == '%s')].id", customerId1.toString()).value(customerId1.toString()))
+            .andExpect(jsonPath("$[?(@.id == '%s')].name", customerId1.toString()).value("Customer A"))
+            .andExpect(jsonPath("$[?(@.id == '%s')].email", customerId1.toString()).value("customera@example.com"))
+            .andExpect(jsonPath("$[?(@.id == '%s')].id", customerId2.toString()).value(customerId2.toString()))
+            .andExpect(jsonPath("$[?(@.id == '%s')].name", customerId2.toString()).value("Customer B"))
+            .andExpect(jsonPath("$[?(@.id == '%s')].email", customerId2.toString()).value("customerb@example.com"));
     }
 
     @Test

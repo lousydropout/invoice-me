@@ -1,5 +1,6 @@
 package com.invoiceme.customer.domain;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -39,5 +40,12 @@ public interface CustomerRepository {
      * @return true if a customer with this email exists
      */
     boolean existsByEmail(String email);
+
+    /**
+     * Finds all customers.
+     * 
+     * @return List of all customers
+     */
+    List<Customer> findAll();
 }
 

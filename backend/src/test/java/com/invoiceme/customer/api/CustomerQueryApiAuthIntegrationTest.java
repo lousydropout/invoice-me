@@ -3,13 +3,8 @@ package com.invoiceme.customer.api;
 import com.invoiceme.customer.domain.Customer;
 import com.invoiceme.customer.domain.CustomerRepository;
 import com.invoiceme.customer.domain.valueobjects.PaymentTerms;
-import com.invoiceme.invoice.domain.Invoice;
-import com.invoiceme.invoice.domain.InvoiceRepository;
-import com.invoiceme.invoice.domain.LineItem;
-import com.invoiceme.invoice.domain.valueobjects.InvoiceNumber;
 import com.invoiceme.shared.domain.Address;
 import com.invoiceme.shared.domain.Email;
-import com.invoiceme.shared.domain.Money;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -27,10 +22,6 @@ import org.testcontainers.containers.PostgreSQLContainer;
 import org.testcontainers.junit.jupiter.Container;
 import org.testcontainers.junit.jupiter.Testcontainers;
 
-import java.math.BigDecimal;
-import java.time.LocalDate;
-import java.util.Currency;
-import java.util.List;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.*;
@@ -91,6 +82,27 @@ class CustomerQueryApiAuthIntegrationTest {
         
         entityManager.flush();
         entityManager.clear();
+    }
+
+    @Test
+    @DisplayName("Epic 5.1 - GET /api/customers - Unauthenticated returns 401")
+    void listAllCustomers_Unauthenticated() throws Exception {
+        mockMvc.perform(get("/api/customers")
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @DisplayName("Epic 5.1 - GET /api/customers - Authenticated returns 200")
+    void listAllCustomers_Authenticated() throws Exception {
+        mockMvc.perform(get("/api/customers")
+                .with(httpBasic("testuser", "testpass"))
+                .contentType(MediaType.APPLICATION_JSON))
+            .andExpect(status().isOk())
+            .andExpect(content().contentType(MediaType.APPLICATION_JSON))
+            .andExpect(jsonPath("$").isArray())
+            .andExpect(jsonPath("$", hasSize(greaterThanOrEqualTo(1))))
+            .andExpect(jsonPath("$[?(@.id == '%s')]", customerId1.toString()).exists());
     }
 
     @Test
