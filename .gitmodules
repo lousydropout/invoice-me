@@ -1,0 +1,3 @@
+[submodule "invoice-me-frontend"]
+	path = invoice-me-frontend
+	url = https://github.com/lousydropout/invoice-me-frontend
