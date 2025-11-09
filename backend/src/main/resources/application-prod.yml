@@ -35,6 +35,8 @@ springdoc:
   # Use explicit server configuration from OpenApiConfig bean
   swagger-ui:
     use-root-path: false
+    # Shorter path for Swagger UI: /swagger instead of /swagger-ui/index.html
+    path: /swagger
   # Disable server URL auto-detection from request
   # This ensures our explicit server configuration in OpenApiConfig is used
   api-docs:

@@ -51,4 +51,10 @@ logging:
     # Uncomment and use spring.profiles.active=cloudwatch to enable JSON logging
     # file: "%d{yyyy-MM-dd HH:mm:ss.SSS} | %-5level | %logger{36} | %msg%n"
 
+# Springdoc OpenAPI configuration
+springdoc:
+  # Shorter path for Swagger UI: /swagger instead of /swagger-ui/index.html
+  swagger-ui:
+    path: /swagger
+
 
