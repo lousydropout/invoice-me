@@ -38,6 +38,7 @@ public class BasicAuthConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable()) // Disable CSRF for stateless API
+            .cors(cors -> {}) // Enable CORS (uses configuration from WebConfig)
             .sessionManagement(session -> session
                 .sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
