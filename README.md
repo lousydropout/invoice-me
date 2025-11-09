@@ -348,7 +348,7 @@ Spring Boot automatically initializes the database schema on startup using `sche
 - `customers` table
 - `invoices`, `line_items`, and `payments` tables
 - `domain_events` table (for event persistence)
-- All indexes and foreign key constraints
+- All indexes and foreign key constraints 
 
 ---
 
