@@ -11,8 +11,10 @@ spring:
     properties:
       hibernate:
         dialect: org.hibernate.dialect.PostgreSQLDialect
-  flyway:
-    enabled: true
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
   security:
     user:
       name: testuser

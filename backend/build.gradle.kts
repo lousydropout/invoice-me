@@ -2,7 +2,6 @@ plugins {
     java
     id("org.springframework.boot") version "3.5.0"
     id("io.spring.dependency-management") version "1.1.6"
-    id("org.flywaydb.flyway") version "10.17.0"
     jacoco
 }
 
@@ -35,8 +34,6 @@ dependencies {
     
     // Database
     runtimeOnly("org.postgresql:postgresql:42.7.3")
-    implementation("org.flywaydb:flyway-core")
-    implementation("org.flywaydb:flyway-database-postgresql")
     
     // Lombok
     compileOnly("org.projectlombok:lombok")

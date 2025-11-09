@@ -10,8 +10,10 @@ spring:
       hibernate:
         format_sql: true
     open-in-view: false
-  flyway:
-    enabled: true
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
 
 server:
   port: 8080

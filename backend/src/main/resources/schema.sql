@@ -1,4 +1,28 @@
--- Create invoices table
+-- InvoiceMe Database Schema
+-- This file is executed by Spring Boot on startup when spring.sql.init.mode=always
+
+-- Enable UUID extension
+CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
+
+-- Customers table
+CREATE TABLE IF NOT EXISTS customers (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    name TEXT NOT NULL,
+    email TEXT NOT NULL UNIQUE,
+    phone TEXT,
+    street TEXT,
+    city TEXT,
+    postal_code TEXT,
+    country TEXT,
+    payment_terms TEXT NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    version BIGINT NOT NULL DEFAULT 0
+);
+
+CREATE INDEX IF NOT EXISTS idx_customers_email ON customers(email);
+
+-- Invoices table
 CREATE TABLE IF NOT EXISTS invoices (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     customer_id UUID NOT NULL,
@@ -14,7 +38,7 @@ CREATE TABLE IF NOT EXISTS invoices (
     CONSTRAINT fk_invoices_customer FOREIGN KEY (customer_id) REFERENCES customers(id)
 );
 
--- Create line_items table
+-- Line items table
 CREATE TABLE IF NOT EXISTS line_items (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_id UUID NOT NULL,
@@ -25,7 +49,7 @@ CREATE TABLE IF NOT EXISTS line_items (
     CONSTRAINT fk_line_items_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
 );
 
--- Create payments table
+-- Payments table
 CREATE TABLE IF NOT EXISTS payments (
     id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
     invoice_id UUID NOT NULL,
@@ -36,10 +60,22 @@ CREATE TABLE IF NOT EXISTS payments (
     CONSTRAINT fk_payments_invoice FOREIGN KEY (invoice_id) REFERENCES invoices(id) ON DELETE CASCADE
 );
 
--- Create indexes
+-- Domain events table (for debugging and audit)
+CREATE TABLE IF NOT EXISTS domain_events (
+    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+    type TEXT NOT NULL,
+    payload JSONB NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+-- Indexes for invoices
 CREATE INDEX IF NOT EXISTS idx_invoices_customer_id ON invoices(customer_id);
 CREATE INDEX IF NOT EXISTS idx_invoices_status ON invoices(status);
 CREATE INDEX IF NOT EXISTS idx_invoices_invoice_number ON invoices(invoice_number);
 CREATE INDEX IF NOT EXISTS idx_line_items_invoice_id ON line_items(invoice_id);
 CREATE INDEX IF NOT EXISTS idx_payments_invoice_id ON payments(invoice_id);
+
+-- Indexes for domain events
+CREATE INDEX IF NOT EXISTS idx_domain_events_type ON domain_events(type);
+CREATE INDEX IF NOT EXISTS idx_domain_events_created_at ON domain_events(created_at DESC);
 
