@@ -240,6 +240,7 @@ export class InvoiceMeStack extends cdk.Stack {
         DB_PORT: '5432',
         DB_NAME: 'invoiceme',
         SPRING_PROFILES_ACTIVE: 'prod',
+        DOMAIN_NAME: domainName, // Domain name for OpenAPI server URL configuration
         // BasicAuth credentials from environment variables (if not using Secrets Manager)
         ...(process.env.SPRING_SECURITY_USER_NAME && {
           SPRING_SECURITY_USER_NAME: process.env.SPRING_SECURITY_USER_NAME,

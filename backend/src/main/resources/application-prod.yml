@@ -17,6 +17,8 @@ spring:
 
 server:
   port: 8080
+  # Trust proxy headers from load balancer (X-Forwarded-Proto, X-Forwarded-For, etc.)
+  forward-headers-strategy: framework
 
 management:
   endpoints:
@@ -27,4 +29,14 @@ management:
     health:
       probes:
         enabled: true
+
+# Springdoc OpenAPI configuration
+springdoc:
+  # Use explicit server configuration from OpenApiConfig bean
+  swagger-ui:
+    use-root-path: false
+  # Disable server URL auto-detection from request
+  # This ensures our explicit server configuration in OpenApiConfig is used
+  api-docs:
+    path: /v3/api-docs
 
