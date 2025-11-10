@@ -71,6 +71,8 @@ It provides fully functional **Invoice** and **Customer** bounded contexts with 
 
 InvoiceMe follows a **Domain-Driven Design (DDD)** + **Hexagonal (Ports & Adapters)** architecture.
 
+> 📖 **For detailed DDD documentation, see [DDD.md](./DDD.md)**
+
 ```mermaid
 graph TD
     A["Presentation Layer (REST Controllers)"] --> B["Application Layer (Command Handlers, Services)"]
@@ -90,6 +92,38 @@ graph TD
 
 Each bounded context (e.g., `invoice`, `customer`, `reporting`) is isolated within its own package and database schema.
 Integration between contexts will later occur through **ACLs (Anti-Corruption Layers)** or **domain events**, ensuring semantic isolation.
+
+---
+
+## 🏗️ Deployment Architecture
+
+> 📖 **For detailed architecture documentation, see [ARCHITECTURE.md](./ARCHITECTURE.md)**
+
+### Local Development
+
+Local development uses **Docker Compose** to orchestrate the backend services:
+
+- **API Server**: Spring Boot application running in a container
+- **PostgreSQL**: Database running in a container
+- Both services are defined in `docker-compose.yml` and can be started with a single command
+
+### Production
+
+Production deployment uses **AWS ECS** with automated CI/CD via **GitHub Actions**:
+
+#### Backend (API Server)
+- **DNS** → **Application Load Balancer (ALB)** → **ECS Fargate**
+- Traffic flows: Users → Route53 DNS → ALB (HTTPS) → ECS tasks (HTTP :8080)
+- **Deployment**: Automated via GitHub Actions workflow
+- **Container Registry**: AWS ECR
+
+#### Database
+- **Aurora Serverless PostgreSQL**: Auto-scaling, managed database
+- Accessible only from ECS tasks via security groups
+- Credentials stored in AWS Secrets Manager
+
+#### Frontend
+- **Vercel**: Frontend application hosting and deployment
 
 ---
 

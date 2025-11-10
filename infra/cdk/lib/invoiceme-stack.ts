@@ -358,6 +358,7 @@ export class InvoiceMeStack extends cdk.Stack {
      */
     const service = new ecs.FargateService(this, 'InvoiceMeService', {
       cluster,
+      serviceName: 'invoiceme-api',
       taskDefinition,
       desiredCount: 1,
       platformVersion: ecs.FargatePlatformVersion.LATEST,

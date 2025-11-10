@@ -12,6 +12,7 @@ env:
   AWS_ACCOUNT_ID: "971422717446"
   ECR_REPOSITORY: vincent-chan/invoice-me
   ECS_CLUSTER: invoiceme-cluster
+  ECS_SERVICE: invoiceme-api
 
 jobs:
   build-and-deploy:
@@ -52,24 +53,11 @@ jobs:
 
       - name: Force ECS service updates for all services in cluster
         run: |
-          echo "Listing all ECS services in cluster ${{ env.ECS_CLUSTER }}..."
-          aws ecs list-services --cluster ${{ env.ECS_CLUSTER }} --output json \
-            | jq -r '.serviceArns[] | split("/") | last' \
-            | while read SERVICE; do
-                echo "Forcing new deployment for service: $SERVICE"
-                aws ecs update-service \
-                  --cluster ${{ env.ECS_CLUSTER }} \
-                  --service "$SERVICE" \
-                  --force-new-deployment \
-                  --region ${{ env.AWS_REGION }}
-              done
-      
-          echo "Waiting for ECS services to stabilize..."
           for SERVICE in $(aws ecs list-services --cluster ${{ env.ECS_CLUSTER }} \
               --query 'serviceArns[].split(`/`)[-1]' --output text); do
             aws ecs wait services-stable \
               --cluster ${{ env.ECS_CLUSTER }} \
-              --services "$SERVICE" \
+              --services ${{ env.ECS_SERVICE }} \
               --region ${{ env.AWS_REGION }}
           done
       
