@@ -6,22 +6,18 @@ import * as rds from 'aws-cdk-lib/aws-rds';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as ecr from 'aws-cdk-lib/aws-ecr';
 import * as acm from 'aws-cdk-lib/aws-certificatemanager';
+import * as route53 from 'aws-cdk-lib/aws-route53';
+import * as route53Targets from 'aws-cdk-lib/aws-route53-targets';
 import { Construct } from 'constructs';
 
 /**
- * NOTE: This stack is configured for development/testing only.
- * It uses the default VPC (all-public subnets) with public IPs for ECS tasks.
- * For production, replace with private subnets, NAT gateways, and non-public RDS.
- */
-
-/**
  * InvoiceMeStack
- * 
+ *
  * Complete infrastructure stack for InvoiceMe API deployment:
- * - Uses default VPC (all subnets are public)
- * - Aurora Serverless PostgreSQL database in public subnet (not publicly accessible)
- * - ECS Fargate cluster and service in public subnets
- * - Application Load Balancer for public access
+ * - Uses alexho-spreadsheet-cleaner VPC (has public + private subnets with NAT gateways)
+ * - Aurora Serverless PostgreSQL database in private subnets
+ * - ECS Fargate cluster and service in private subnets (NAT gateway for internet access)
+ * - Application Load Balancer in public subnets for internet access
  * - Security groups for secure communication
  */
 export class InvoiceMeStack extends cdk.Stack {
@@ -31,20 +27,19 @@ export class InvoiceMeStack extends cdk.Stack {
     // Get domain name from context or environment variable, with fallback
     const domainName = this.node.tryGetContext('domainName') 
       || process.env.DOMAIN_NAME 
-      || 'invoice-me.vincentchan.cloud';
+      || 'invoice-api.vincentchan.cloud';
 
     // ============================================================================
     // VPC & Networking
     // ============================================================================
-    
+
     /**
-     * Use the default VPC
-     * Default VPC has public subnets in all availability zones
-     * No NAT Gateways needed - resources use public IPs for internet access
-     * Note: This requires the stack to have environment (account/region) set
+     * Use the alexho-spreadsheet-cleaner VPC
+     * This VPC has both public and private subnets with NAT gateways,
+     * allowing private resources to access AWS services like Secrets Manager
      */
-    const vpc = ec2.Vpc.fromLookup(this, 'DefaultVpc', {
-      isDefault: true,
+    const vpc = ec2.Vpc.fromLookup(this, 'AlexhoVpc', {
+      vpcId: 'vpc-0f860247b641ca071',
     });
 
     // ============================================================================
@@ -104,7 +99,7 @@ export class InvoiceMeStack extends cdk.Stack {
     rdsSecurityGroup.addIngressRule(
       ec2.Peer.anyIpv4(),
       ec2.Port.tcp(5432),
-      'Allow PostgreSQL from any IPv4 address'
+      'Allow PostgreSQL from any IPv4 address (for debugging)'
     );
 
     // ============================================================================
@@ -113,22 +108,9 @@ export class InvoiceMeStack extends cdk.Stack {
 
     /**
      * Aurora Serverless v2 PostgreSQL cluster
-     * 
-     * DEVELOPMENT CONFIGURATION:
-     * - Deployed in public subnets of default VPC (not publicly accessible)
+     *
+     * - Deployed in private subnets (accessed via NAT gateway)
      * - Serverless v2 auto-scales based on workload (min 0.5 ACU, max 1 ACU for dev)
-     * - Aurora automatically distributes across multiple AZs for high availability
-     * - Security groups restrict access to ECS tasks only
-     * 
-     * PRODUCTION: Use private subnets with NAT gateways for better security isolation
-     * 
-     * Benefits of Aurora Serverless v2:
-     * - Auto-scaling: scales up/down based on workload
-     * - Cost-effective: pay only for what you use
-     * - PostgreSQL compatible: works with existing PostgreSQL applications
-     * - High availability: built-in replication and failover
-     * 
-     * Other settings:
      * - Credentials stored in AWS Secrets Manager
      * - Storage encrypted at rest
      * - 7 days backup retention
@@ -138,23 +120,21 @@ export class InvoiceMeStack extends cdk.Stack {
         version: rds.AuroraPostgresEngineVersion.VER_17_4,
       }),
       writer: rds.ClusterInstance.serverlessV2('writer', {
-        // Serverless v2 scaling configuration
-        // ACU (Aurora Capacity Units): 0.5 ACU = ~1GB RAM, 1 vCPU
         scaleWithWriter: true,
       }),
-      serverlessV2MinCapacity: 0.5, // Minimum capacity (0.5 ACU = ~1GB RAM)
-      serverlessV2MaxCapacity: 1,    // Maximum capacity (1 ACU = ~2GB RAM) for development
+      serverlessV2MinCapacity: 0.5,
+      serverlessV2MaxCapacity: 1,
       vpc,
       vpcSubnets: {
-        subnetType: ec2.SubnetType.PUBLIC,
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
       securityGroups: [rdsSecurityGroup],
       defaultDatabaseName: 'invoiceme',
       credentials: rds.Credentials.fromGeneratedSecret('invoiceme', {
-        secretName: 'invoiceme/rds/credentials',
+        secretName: 'vincent/invoiceme/rds/credentials',
       }),
-      removalPolicy: cdk.RemovalPolicy.DESTROY, // Change to RETAIN for production
-      deletionProtection: false, // Set to true for production
+      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      deletionProtection: false,
       storageEncrypted: true,
       backup: {
         retention: cdk.Duration.days(7),
@@ -177,7 +157,7 @@ export class InvoiceMeStack extends cdk.Stack {
      */
     const cluster = new ecs.Cluster(this, 'InvoiceMeCluster', {
       vpc,
-      clusterName: 'invoiceme-cluster',
+      clusterName: 'vincent-invoiceme-cluster',
       enableFargateCapacityProviders: true,
     });
 
@@ -191,7 +171,7 @@ export class InvoiceMeStack extends cdk.Stack {
      * For production, consider ONE_MONTH or LONGER for compliance/auditing
      */
     const logGroup = new logs.LogGroup(this, 'InvoiceMeLogGroup', {
-      logGroupName: '/ecs/invoiceme-api',
+      logGroupName: '/ecs/vincent-invoiceme-api',
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
@@ -345,20 +325,14 @@ export class InvoiceMeStack extends cdk.Stack {
     /**
      * ECS Fargate Service
      * Runs the task definition and connects to the ALB target group
-     * 
+     *
      * Network configuration:
-     * - Deployed in public subnets (default VPC has no private subnets)
-     * - assignPublicIp: true is required because there's no NAT gateway in default VPC
-     *   This allows tasks to pull images from ECR and access other AWS services
-     * 
-     * Deployment configuration:
-     * - minHealthyPercent: 100 ensures no downtime during updates
-     * - maxHealthyPercent: 200 allows new tasks to start before old ones terminate
-     * - platformVersion: LATEST uses the latest Fargate platform capabilities
+     * - Deployed in private subnets with NAT gateway for internet access
+     * - No public IP needed since NAT gateway handles outbound traffic
      */
     const service = new ecs.FargateService(this, 'InvoiceMeService', {
       cluster,
-      serviceName: 'invoiceme-api',
+      serviceName: 'vincent-invoiceme-api',
       taskDefinition,
       desiredCount: 1,
       platformVersion: ecs.FargatePlatformVersion.LATEST,
@@ -366,14 +340,36 @@ export class InvoiceMeStack extends cdk.Stack {
       maxHealthyPercent: 200,
       securityGroups: [ecsSecurityGroup],
       vpcSubnets: {
-        subnetType: ec2.SubnetType.PUBLIC,
+        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
       },
-      assignPublicIp: true, // Required: no NAT gateway in default VPC
       healthCheckGracePeriod: cdk.Duration.seconds(60),
     });
 
     // Attach the service to the ALB target group
     service.attachToApplicationTargetGroup(targetGroup);
+
+    // ============================================================================
+    // Route53 DNS
+    // ============================================================================
+
+    /**
+     * Look up the existing hosted zone for vincentchan.cloud
+     */
+    const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+      hostedZoneId: 'Z00669322LNYAWLYNIHGN',
+      zoneName: 'vincentchan.cloud',
+    });
+
+    /**
+     * Create an A record alias pointing to the ALB
+     */
+    new route53.ARecord(this, 'ApiDnsRecord', {
+      zone: hostedZone,
+      recordName: 'invoice-api',
+      target: route53.RecordTarget.fromAlias(
+        new route53Targets.LoadBalancerTarget(loadBalancer)
+      ),
+    });
 
     // ============================================================================
     // Stack Outputs
@@ -385,7 +381,7 @@ export class InvoiceMeStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'AlbDnsName', {
       value: loadBalancer.loadBalancerDnsName,
       description: 'DNS name of the Application Load Balancer',
-      exportName: 'InvoiceMeAlbDnsName',
+      exportName: 'VincentInvoiceMeAlbDnsName',
     });
 
     new cdk.CfnOutput(this, 'ApiUrl', {

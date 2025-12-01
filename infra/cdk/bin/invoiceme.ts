@@ -38,7 +38,7 @@ if (!process.env.AWS_ACCOUNT_ID || !process.env.AWS_REGION) {
   console.warn('Warning: AWS_ACCOUNT_ID or AWS_REGION not set in .env file. Using defaults.');
 }
 
-new InvoiceMeStack(app, 'InvoiceMeStack', {
+new InvoiceMeStack(app, 'VincentInvoiceMeStack', {
   env: {
     account: account,
     region: region,
