@@ -151,11 +151,22 @@ public final class Money {
 
     /**
      * Checks if this Money is zero.
-     * 
+     *
      * @return true if the amount is zero
      */
     public boolean isZero() {
         return this.amount.compareTo(BigDecimal.ZERO) == 0;
+    }
+
+    /**
+     * Checks if this Money is effectively zero (less than one cent).
+     * Used for determining if an invoice is fully paid, accounting for
+     * overpayments and tiny rounding differences.
+     *
+     * @return true if the amount is less than 0.01
+     */
+    public boolean isEffectivelyZero() {
+        return this.amount.compareTo(new BigDecimal("0.01")) < 0;
     }
 
     /**

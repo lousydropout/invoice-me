@@ -13,6 +13,7 @@ import com.invoiceme.shared.domain.DomainEvent;
 import com.invoiceme.shared.domain.Money;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.ArrayList;
@@ -28,7 +29,7 @@ import java.util.UUID;
  * Invariants:
  * - Only editable while status == DRAFT
  * - sum(payments.amount) ≤ total
- * - When balance == 0 → status = PAID
+ * - When balance < 0.01 → status = PAID (accounts for overpayment and rounding)
  */
 public class Invoice {
     private final UUID id;
@@ -312,9 +313,14 @@ public class Invoice {
         }
         
         Money balance = calculateBalance();
-        if (payment.getAmount().isGreaterThan(balance)) {
+        // Round balance to pennies (HALF_UP) for validation to allow paying the displayed amount
+        Money roundedBalance = Money.of(
+            balance.getAmount().setScale(2, RoundingMode.HALF_UP),
+            balance.getCurrency()
+        );
+        if (payment.getAmount().isGreaterThan(roundedBalance)) {
             throw new PaymentExceedsBalanceException(
-                String.format("Payment amount %s exceeds outstanding balance %s", payment.getAmount(), balance)
+                String.format("Payment amount %s exceeds outstanding balance %s", payment.getAmount(), roundedBalance)
             );
         }
         
@@ -327,9 +333,9 @@ public class Invoice {
             Instant.now()
         ));
         
-        // Check if invoice is now fully paid
+        // Check if invoice is now fully paid (balance < $0.01 including overpayments)
         Money newBalance = calculateBalance();
-        if (newBalance.isZero()) {
+        if (newBalance.isEffectivelyZero()) {
             this.status = InvoiceStatus.PAID;
             domainEvents.add(new InvoicePaid(id, customerId, invoiceNumber.getValue(), Instant.now()));
         }
