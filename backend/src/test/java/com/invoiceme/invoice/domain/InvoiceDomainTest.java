@@ -308,48 +308,31 @@ class InvoiceDomainTest {
         invoice.sendInvoice();
         invoice.pullDomainEvents(); // Clear events
 
-        // Pay $219.996 which rounds to $220.00, leaving balance of effectively zero
-        // Due to Money rounding, we need to pay an amount that leaves < $0.01
-        // Total is $220.00, so paying $220.00 - $0.004 = $219.996 -> rounds to $220.00
-        // Let's pay in two installments to leave a tiny balance
-        Money firstPayment = Money.of(new BigDecimal("219.99"), USD);
-        Payment payment1 = new Payment(
+        // Pay full amount to zero the balance
+        Money total = invoice.calculateTotal();
+        Payment p = new Payment(
             UUID.randomUUID(),
-            firstPayment,
+            total,
             TODAY,
             PaymentMethod.BANK_TRANSFER,
             "REF-1"
         );
-        invoice.recordPayment(payment1);
-        invoice.pullDomainEvents(); // Clear events
+        invoice.recordPayment(p);
 
-        // Balance is now $0.01 - exactly one cent, NOT effectively zero
-        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.SENT);
-
-        // Now pay slightly less than the remaining balance
-        // Remaining balance is $0.01, pay $0.004 which rounds to $0.00
-        // Actually, we need to test the effectively zero threshold
-        // Let's create a scenario where after payment, balance is between 0 and 0.01
-
-        // Pay the remaining $0.01 to bring balance to zero
-        Money finalPayment = Money.of(new BigDecimal("0.01"), USD);
-        Payment payment2 = new Payment(
-            UUID.randomUUID(),
-            finalPayment,
-            TODAY,
-            PaymentMethod.BANK_TRANSFER,
-            "REF-2"
-        );
-        invoice.recordPayment(payment2);
-
-        // Then: Invoice should be marked PAID
+        // Then: Balance is $0.00, which IS effectively zero
         assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PAID);
+        assertThat(invoice.calculateBalance().isZero()).isTrue();
         assertThat(invoice.calculateBalance().isEffectivelyZero()).isTrue();
+
+        // Verify InvoicePaid event was emitted
+        List<com.invoiceme.shared.domain.DomainEvent> events = invoice.pullDomainEvents();
+        assertThat(events).hasSize(2); // PaymentRecorded + InvoicePaid
+        assertThat(events.get(1)).isInstanceOf(InvoicePaid.class);
     }
 
     @Test
-    @DisplayName("T3.1.12 - Invoice with exactly $0.01 balance is NOT marked PAID")
-    void invoiceWithOneCentBalanceNotPaid() {
+    @DisplayName("T3.1.12 - Invoice with exactly $0.01 balance IS marked PAID (threshold <= $0.01)")
+    void invoiceWithOneCentBalanceIsPaid() {
         // Given
         Invoice invoice = createDraftInvoice();
         invoice.sendInvoice();
@@ -368,10 +351,10 @@ class InvoiceDomainTest {
         // When
         invoice.recordPayment(p);
 
-        // Then: Balance is exactly $0.01, which is NOT effectively zero
-        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.SENT);
+        // Then: Balance is exactly $0.01, which IS effectively zero (threshold <= $0.01)
+        assertThat(invoice.getStatus()).isEqualTo(InvoiceStatus.PAID);
         assertThat(invoice.calculateBalance().getAmount()).isEqualByComparingTo(new BigDecimal("0.01"));
-        assertThat(invoice.calculateBalance().isEffectivelyZero()).isFalse();
+        assertThat(invoice.calculateBalance().isEffectivelyZero()).isTrue();
     }
 
     @Test

@@ -23,11 +23,11 @@ class MoneyTest {
         }
 
         @Test
-        @DisplayName("0.009 rounds to 0.01 which is NOT effectively zero")
-        void smallPositiveRoundsUp_returnsFalse() {
-            // Money rounds 0.009 to 0.01 (HALF_UP), so it's no longer effectively zero
+        @DisplayName("0.009 rounds to 0.01 which IS effectively zero (threshold <= 0.01)")
+        void smallPositiveRoundsUp_returnsTrue() {
+            // Money rounds 0.009 to 0.01 (HALF_UP), which IS effectively zero
             Money money = Money.of(new BigDecimal("0.009"));
-            assertThat(money.isEffectivelyZero()).isFalse();
+            assertThat(money.isEffectivelyZero()).isTrue();
         }
 
         @Test
@@ -53,10 +53,10 @@ class MoneyTest {
         }
 
         @Test
-        @DisplayName("returns false for exactly one cent")
-        void oneCent_returnsFalse() {
+        @DisplayName("returns true for exactly one cent (threshold <= 0.01)")
+        void oneCent_returnsTrue() {
             Money money = Money.of(new BigDecimal("0.01"));
-            assertThat(money.isEffectivelyZero()).isFalse();
+            assertThat(money.isEffectivelyZero()).isTrue();
         }
 
         @Test
