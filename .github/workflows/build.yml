@@ -11,8 +11,8 @@ env:
   AWS_REGION: us-east-1
   AWS_ACCOUNT_ID: "971422717446"
   ECR_REPOSITORY: vincent-chan/invoice-me
-  ECS_CLUSTER: invoiceme-cluster
-  ECS_SERVICE: invoiceme-api
+  ECS_CLUSTER: vincent-invoiceme-cluster
+  ECS_SERVICE: vincent-invoiceme-api
 
 jobs:
   build-and-deploy:
@@ -51,15 +51,20 @@ jobs:
           cache-from: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache
           cache-to: type=registry,ref=${{ steps.login-ecr.outputs.registry }}/${{ env.ECR_REPOSITORY }}:buildcache,mode=max
 
-      - name: Force ECS service updates for all services in cluster
+      - name: Deploy to ECS
         run: |
-          for SERVICE in $(aws ecs list-services --cluster ${{ env.ECS_CLUSTER }} \
-              --query 'serviceArns[].split(`/`)[-1]' --output text); do
-            aws ecs wait services-stable \
-              --cluster ${{ env.ECS_CLUSTER }} \
-              --services ${{ env.ECS_SERVICE }} \
-              --region ${{ env.AWS_REGION }}
-          done
-      
-          echo "✅ All ECS services redeployed successfully!"
+          aws ecs update-service \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service ${{ env.ECS_SERVICE }} \
+            --force-new-deployment \
+            --region ${{ env.AWS_REGION }}
+
+          echo "⏳ Waiting for service to stabilize..."
+
+          aws ecs wait services-stable \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --region ${{ env.AWS_REGION }}
+
+          echo "✅ ECS service redeployed successfully!"
     
