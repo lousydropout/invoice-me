@@ -22,7 +22,7 @@ public class ListInvoicesHandler {
     @Transactional(readOnly = true)
     public List<InvoiceSummaryView> handle(ListInvoicesQuery query) {
         String sql = """
-            SELECT 
+            SELECT
                 i.id,
                 i.invoice_number,
                 i.customer_id,
@@ -30,14 +30,14 @@ public class ListInvoicesHandler {
                 i.status,
                 i.issue_date,
                 i.due_date,
-                COALESCE(
+                ROUND(COALESCE(
                     (SELECT SUM(li2.subtotal) FROM line_items li2 WHERE li2.invoice_id = i.id) * (1 + i.tax_rate),
                     0
-                ) AS total,
-                COALESCE(
+                ), 2) AS total,
+                ROUND(COALESCE(
                     (SELECT SUM(li2.subtotal) FROM line_items li2 WHERE li2.invoice_id = i.id) * (1 + i.tax_rate),
                     0
-                ) - COALESCE(
+                ), 2) - COALESCE(
                     (SELECT SUM(p2.amount) FROM payments p2 WHERE p2.invoice_id = i.id),
                     0
                 ) AS balance

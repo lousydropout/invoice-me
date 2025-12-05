@@ -12,6 +12,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 import java.util.UUID;
 
@@ -47,12 +48,13 @@ public class GetInvoiceByIdHandler {
         CustomerEntity customer = customerRepository.findById(invoice.getCustomerId())
             .orElseThrow(() -> ApplicationError.notFound("Customer"));
 
-        // Calculate totals
+        // Calculate totals (round tax to 2 decimals to match domain model)
         BigDecimal subtotal = invoice.getLineItems().stream()
             .map(LineItemEntity::getSubtotal)
             .reduce(BigDecimal.ZERO, BigDecimal::add);
 
-        BigDecimal tax = subtotal.multiply(invoice.getTaxRate());
+        BigDecimal tax = subtotal.multiply(invoice.getTaxRate())
+            .setScale(2, RoundingMode.HALF_UP);
         BigDecimal total = subtotal.add(tax);
 
         BigDecimal totalPaid = invoiceWithPayments.getPayments().stream()
